@@ -17,6 +17,17 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('lang="en-GB"',html)
         self.assertIn('aria-expanded="false"',html)
 
+    def test_featured_media(self):
+        html = (ROOT/'index.html').read_text()
+        css = (ROOT/'style.css').read_text()
+        self.assertTrue((ROOT/'hero1.jpg').is_file())
+        self.assertTrue((ROOT/'hero2.jpg').is_file())
+        self.assertIn('url("./hero1.jpg")', css)
+        self.assertIn('url("./hero2.jpg")', css)
+        self.assertIn('www.youtube-nocookie.com/embed/hWWejOy1vys?start=32', html)
+        self.assertIn('loading="lazy"', html)
+        self.assertIn('title="Black Survival Gear featured YouTube video"', html)
+
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
         self.assertNotIn('firebaseConfig',html)
