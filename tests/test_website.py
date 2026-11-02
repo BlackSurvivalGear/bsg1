@@ -63,10 +63,21 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('Launch Dashboard', home)
         self.assertIn('href="../comms/"', dashboard)
         self.assertIn('BSG OSINT', dashboard)
-        self.assertIn('COMING SOON', dashboard)
-        self.assertNotIn('href="../osint/"', dashboard)
+        self.assertIn('Launch BSG OSINT', dashboard)
+        self.assertIn('href="../osint/"', dashboard)
         self.assertIn('href="../dashboard/"', comms)
         self.assertIn('BSG%20GOLD%20LOGO.png', css)
+
+    def test_osint_app_modules_present(self):
+        osint = ROOT/'osint'
+        html = (osint/'index.html').read_text()
+        dashboard = (ROOT/'dashboard'/'index.html').read_text()
+        self.assertIn('BSG OSINT', html)
+        self.assertIn('href="../dashboard/"', html)
+        self.assertIn('href="../osint/"', dashboard)
+        for relative in ['africanman-radio.js', 'afrosint-news-player.js', 'country/index.html', 'country/countries-metadata.js', 'news-wall/index.html', 'art/index.html', 'art/app.js', 'art/styles.css']:
+            with self.subTest(relative=relative):
+                self.assertTrue((osint/relative).is_file())
 
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
