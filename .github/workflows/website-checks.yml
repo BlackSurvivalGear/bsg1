@@ -1,0 +1,17 @@
+name: Website checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check script.js
+      - name: Website structure tests
+        run: python3 -m unittest discover -s tests -v
