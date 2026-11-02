@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEWS WALL | AfricanMan</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050809;color:#e5e9e8;font:14px system-ui,sans-serif}main{max-width:1700px;margin:auto;padding:24px 22px 40px}header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}h1{font-size:24px;letter-spacing:.16em;margin:0;color:#d7b66c}header span{font-size:12px;color:#9caeb2;letter-spacing:.1em}.wall-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}.wall-card{min-width:0;background:#0a1115;border:1px solid #33474b;border-radius:7px;overflow:hidden}.wall-card h2{font-size:12px;letter-spacing:.08em;margin:0;padding:11px 12px;color:#d7b66c;background:#101e22}.wall-card iframe{display:block;width:100%;aspect-ratio:16/9;border:0;background:#000}.wall-note{font-size:12px;color:#9caeb2;margin-top:14px}.afr-news-ticker{border:1px solid #b7954e!important;border-radius:5px}@media(max-width:900px){.wall-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){main{padding:18px 12px}.wall-grid{grid-template-columns:1fr}h1{font-size:20px}}
+</style></head><body><main><header><h1>NEWS WALL</h1><span>AFRICANMAN · SIX CHANNELS</span></header><div id="wall-ticker" aria-label="Scrolling news headlines"></div><section class="wall-grid" id="wall-grid" aria-label="Six news channels"></section><p class="wall-note">All channels start muted. Use each video's controls to enable audio. Playback availability depends on each broadcaster's embedding permissions.</p></main>
+<script src="../afrosint-news-player.js"></script><script>
+const wallNames=['Frontline Africa','RT','Al Jazeera','Africanews','Channels TV','Euronews'];
+const grid=document.getElementById('wall-grid');
+wallNames.forEach(name=>{
+ const channel=splitChannels.find(ch=>ch[0]===name);
+ if(!channel)return;
+ const card=document.createElement('article');card.className='wall-card';
+ const heading=document.createElement('h2');heading.textContent=name;
+ const frame=document.createElement('iframe');frame.title=name+' video';frame.loading='lazy';frame.allow='autoplay; encrypted-media; picture-in-picture';frame.allowFullscreen=true;frame.src=_autoMute(channel[1]);
+ card.append(heading,frame);grid.appendChild(card);
+});
+afrAttachTicker(document.getElementById('wall-ticker'));
+</script></body></html>
