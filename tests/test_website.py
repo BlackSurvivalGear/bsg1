@@ -34,7 +34,7 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('href="./comms/"', html)
         self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
         self.assertIn('BSG COMMS', comms)
-        self.assertIn('href="../"', comms)
+        self.assertIn('href="../dashboard/"', comms)
         self.assertIn('disabled title="Requires verified model-specific read protocol"', comms)
         self.assertIn('disabled title="Requires verified model-specific write protocol"', comms)
 
@@ -53,6 +53,20 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('.workspace-content::before', css)
         self.assertIn('pointer-events:none', css)
         self.assertIn('opacity:.10', css)
+
+    def test_central_dashboard_navigation(self):
+        home = (ROOT/'index.html').read_text()
+        dashboard = (ROOT/'dashboard'/'index.html').read_text()
+        comms = (ROOT/'comms'/'index.html').read_text()
+        css = (ROOT/'dashboard'/'dashboard.css').read_text()
+        self.assertIn('href="./dashboard/"', home)
+        self.assertIn('Launch Dashboard', home)
+        self.assertIn('href="../comms/"', dashboard)
+        self.assertIn('BSG OSINT', dashboard)
+        self.assertIn('COMING SOON', dashboard)
+        self.assertNotIn('href="../osint/"', dashboard)
+        self.assertIn('href="../dashboard/"', comms)
+        self.assertIn('BSG%20GOLD%20LOGO.png', css)
 
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
