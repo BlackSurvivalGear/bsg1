@@ -38,6 +38,14 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('disabled title="Requires verified model-specific read protocol"', comms)
         self.assertIn('disabled title="Requires verified model-specific write protocol"', comms)
 
+    def test_comms_logo_uses_existing_asset(self):
+        html = (ROOT/'comms'/'index.html').read_text()
+        css = (ROOT/'comms'/'style.css').read_text()
+        self.assertTrue((ROOT/'BSG GOLD LOGO.png').is_file())
+        self.assertIn('src="../BSG%20GOLD%20LOGO.png"', html)
+        self.assertNotIn('Tactical%20BSG COMMS%20Radio%20Emblem.png', html)
+        self.assertIn('header img{width:74px;height:74px;object-fit:contain;flex-shrink:0}', css)
+
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
         self.assertNotIn('firebaseConfig',html)
