@@ -28,6 +28,16 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('loading="lazy"', html)
         self.assertIn('title="Black Survival Gear featured YouTube video"', html)
 
+    def test_integrated_comms(self):
+        html = (ROOT/'index.html').read_text()
+        comms = (ROOT/'comms'/'index.html').read_text()
+        self.assertIn('href="./comms/"', html)
+        self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
+        self.assertIn('BSG COMMS', comms)
+        self.assertIn('href="../"', comms)
+        self.assertIn('disabled title="Requires verified model-specific read protocol"', comms)
+        self.assertIn('disabled title="Requires verified model-specific write protocol"', comms)
+
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
         self.assertNotIn('firebaseConfig',html)
