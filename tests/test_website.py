@@ -46,6 +46,14 @@ class WebsiteTests(unittest.TestCase):
         self.assertNotIn('Tactical%20BSG COMMS%20Radio%20Emblem.png', html)
         self.assertIn('header img{width:74px;height:74px;object-fit:contain;flex-shrink:0}', css)
 
+    def test_comms_watermark_uses_existing_gold_logo(self):
+        css = (ROOT/'comms'/'style.css').read_text()
+        self.assertTrue((ROOT/'BSG GOLD LOGO.png').is_file())
+        self.assertIn('url("../BSG%20GOLD%20LOGO.png")', css)
+        self.assertIn('.workspace-content::before', css)
+        self.assertIn('pointer-events:none', css)
+        self.assertIn('opacity:.10', css)
+
     def test_no_production_configuration(self):
         html = (ROOT/'index.html').read_text()
         self.assertNotIn('firebaseConfig',html)
