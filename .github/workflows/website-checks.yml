@@ -13,5 +13,10 @@ jobs:
           node-version: '22'
       - name: JavaScript syntax
         run: node --check script.js
+      - name: BSG COMMS JavaScript syntax and tests
+        working-directory: comms
+        run: |
+          npm run check
+          npm test
       - name: Website structure tests
         run: python3 -m unittest discover -s tests -v
