@@ -34,7 +34,7 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('href="./comms/"', html)
         self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
         self.assertIn('BSG COMMS', comms)
-        self.assertIn('href="../"', comms)
+        self.assertIn('href="../dashboard/"', comms)
         self.assertIn('disabled title="Requires verified model-specific read protocol"', comms)
         self.assertIn('disabled title="Requires verified model-specific write protocol"', comms)
 
