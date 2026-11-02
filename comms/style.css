@@ -203,3 +203,8 @@ main{max-width:none;padding:0;margin:0}
 @media(max-width:640px){.academy-course{font-size:1.05rem}.academy-lead,.academy-reading{font-size:1.1rem}.academy-step-nav button{width:100%}}
 
 .bsg-home-link{display:block;background:#101b14;color:#d6af61;padding:10px 22px;text-decoration:none;font:700 12px Arial,sans-serif;letter-spacing:.12em;border-bottom:1px solid #51452a}.bsg-home-link:hover,.bsg-home-link:focus-visible{color:#f0d38e;text-decoration:underline}
+
+/* Preparedness-led dashboard introduction */
+.dashboard-intro .dashboard-headline-accent{color:#d6af61}
+.dashboard-intro .dashboard-motto{margin:24px 0 0;padding-top:18px;border-top:1px solid #3b5140;color:#d6af61;font-size:clamp(.72rem,1.3vw,.9rem);font-weight:700;letter-spacing:.11em;line-height:1.8}
+.dashboard-intro h2{line-height:1.22}
