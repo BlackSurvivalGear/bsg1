@@ -29,3 +29,7 @@ Run the full radio regression suite from `comms/` using `npm run check && npm te
 ## BSG Central Dashboard
 
 The public homepage remains at `/`. Its **Launch Dashboard** link opens the dedicated static app launcher at `/dashboard/` (or `/bsg1/dashboard/` on GitHub Pages). The central dashboard links to the existing BSG COMMS app at `/comms/`. BSG COMMS provides a return link to the central dashboard. BSG OSINT is displayed as **Coming Soon** only; no AfricanMan application has been imported or deployed. Gear and Training currently link back to their existing public homepage sections. No backend, login, deployment or DNS change is included.
+
+## BSG OSINT
+
+The BSG Central Dashboard launches `/osint/`, a static copy of the **public AfricanMan app** from source commit `6b3479f723d19cfeea405b67738fd47f6c2539b3`. This includes the globe, country explorer, news wall, radio player and African Revolution Timeline (ART). The original AfricanMan repository and its Firebase authentication/backend, account pages, deployment configuration, and DNS are **not** copied or modified. This is not an independent live intelligence backend: map tiles, streaming news, radio, remote datasets and third-party embeds may require internet connectivity or external services. Browser testing is required to verify external integrations and cross-origin limitations. BSG OSINT's main globe page includes a link back to `/dashboard/`.
