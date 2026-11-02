@@ -19,3 +19,9 @@ Run `node --check script.js` and `python3 -m unittest discover -s tests -v` (Pyt
 ## Scope notes
 
 The BSG COMMS button currently links to the existing radio app URL until its rebrand and hosting migration are completed. Equipment and contact links intentionally direct visitors to the current BSG site; no commerce, contact form, authentication or payment backend is implemented. No DNS or production deployment is performed by this PR.
+
+## Integrated BSG COMMS
+
+The complete radio application lives in `comms/` and is opened from the homepage at `./comms/`. It is copied from `ImoTechAI/squawk` at source commit `66db0d0babf8e51ea2f5d92cf6364d202b2e48af`. The original repository remains unchanged. Visible branding is BSG COMMS; legacy `squawk-*` localStorage keys, backup format identifiers and DOM events are deliberately preserved for compatibility with existing browser data and test contracts. **Browser storage is origin-specific:** data saved on the former GitHub Pages origin is not automatically accessible on the BSG domain. Export JSON from the old app and restore it in BSG COMMS when moving profiles/channels.
+
+Run the full radio regression suite from `comms/` using `npm run check && npm test`. The Range Planner and all hardware transport safeguards remain unchanged. Read/Write buttons stay disabled. The radio UI uses Leaflet CDN assets for map rendering, so some map functionality needs network access despite the app's offline-first design.
