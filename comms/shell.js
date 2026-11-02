@@ -28,9 +28,6 @@ const pages=document.createElement('div');pages.className='workspace-pages';cont
 const views=new Map();
 function view(id){const panel=document.createElement('section');panel.className='workspace-view';panel.dataset.workspace=id;panel.id='view-'+id;panel.hidden=true;pages.append(panel);views.set(id,panel);return panel;}
 const dashboard=view('dashboard');
-const intro=document.createElement('div');intro.className='dashboard-intro';
-intro.innerHTML='<span class="eyebrow">BSG COMMS · COMMUNICATIONS READINESS</span><h2>WHEN NETWORKS FAIL.<br><span class="dashboard-headline-accent">STAY INFORMED. STAY CONNECTED.</span></h2><p>Build your radio knowledge, explore frequencies and develop the skills to communicate independently when conventional networks become unavailable.</p><p class="dashboard-motto">KNOW YOUR EQUIPMENT · MASTER YOUR SIGNAL · MAINTAIN YOUR CONNECTION</p>';
-dashboard.append(intro);
 const stats=document.createElement('div');stats.className='dashboard-stats';dashboard.append(stats);
 const shortcuts=document.createElement('div');shortcuts.className='dashboard-shortcuts';dashboard.append(shortcuts);
 const radios=view('radios');radios.append(radio,profiles);
