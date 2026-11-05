@@ -105,7 +105,7 @@ test('compact Channel Editor keeps radio actions centered and file actions after
  for(const id of ['simulator-read','radio-write-placeholder','radio-verify-write-placeholder','add','import','export','backup','restore']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
- assert.match(editor,/class="radio-editor-program-actions actions"[\\s\\S]*id="simulator-read"[\\s\\S]*id="radio-write-placeholder"[\\s\\S]*id="radio-verify-write-placeholder"/);
+ assert.match(editor,/class="radio-editor-program-actions actions"[^>]*>[\\s\\S]*id="simulator-read"[\\s\\S]*id="radio-write-placeholder"[\\s\\S]*id="radio-verify-write-placeholder"/);
  assert.ok(editor.indexOf('id="channels"')<editor.indexOf('id="add"'));
  assert.ok(editor.indexOf('id="add"')<editor.indexOf('id="import"'));
  assert.ok(editor.indexOf('id="import"')<editor.indexOf('id="export"'));
