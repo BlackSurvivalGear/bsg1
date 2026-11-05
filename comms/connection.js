@@ -7,7 +7,7 @@ export function formatUSBInfo(info={}){
 export class ConnectionManager {
   constructor({serial=null,onChange=()=>{},onLog=()=>{}}={}){
     this.serial=serial;this.onChange=onChange;this.onLog=onLog;
-    this.port=null;this.state='disconnected';this.mode=null;this.info={};
+    this.port=null;this.state='disconnected';this.mode=null;this.info={};this.testingUSB=false;
     this.handleDisconnect=event=>{
       if(this.port && (event.port===this.port || event.target===this.port)){
         this.onLog('USB device disconnected');
@@ -19,7 +19,7 @@ export class ConnectionManager {
   snapshot(){return {state:this.state,mode:this.mode,info:formatUSBInfo(this.info),baudRate:this.mode==='usb'?SERIAL_OPTIONS.baudRate:null};}
   setState(state){this.state=state;this.onChange(this.snapshot());}
   async connectUSB(){
-    if(this.state!=='disconnected')throw Error('Disconnect before selecting another connection');
+    if(this.state!=='disconnected'||this.testingUSB)throw Error('Disconnect or finish USB test before selecting another connection');
     if(!this.serial?.requestPort)throw Error('Web Serial is unavailable. Use desktop Chrome or Edge over HTTPS.');
     this.setState('connecting');
     let port;
@@ -39,8 +39,9 @@ export class ConnectionManager {
     }
   }
   async testUSBConnection(){
-    if(this.state!=='disconnected')throw Error('Disconnect before testing another USB port');
+    if(this.state!=='disconnected'||this.testingUSB)throw Error('Disconnect or finish USB test before testing another USB port');
     if(!this.serial?.requestPort)throw Error('Web Serial is unavailable. Use desktop Chrome or Edge over HTTPS.');
+    this.testingUSB=true;
     let port,opened=false;
     try{
       port=await this.serial.requestPort();
@@ -57,10 +58,11 @@ export class ConnectionManager {
     }finally{
       if(port)try{await port.close();if(opened)this.onLog('USB connection test: port closed');}
       catch(error){this.onLog('USB connection test: port close failed: '+error.message);throw error;}
+      this.testingUSB=false;
     }
   }
   connectSimulator(){
-    if(this.state!=='disconnected')throw Error('Disconnect before starting simulator');
+    if(this.state!=='disconnected'||this.testingUSB)throw Error('Disconnect or finish USB test before starting simulator');
     this.port=null;this.mode='simulation';this.info={};
     this.onLog('Simulated connection active; no physical radio is involved');
     this.setState('connected');
