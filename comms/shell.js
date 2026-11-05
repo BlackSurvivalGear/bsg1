@@ -57,8 +57,26 @@ const backdrop=document.createElement('button');backdrop.className='nav-backdrop
 function closeMenu(){sidebar.classList.remove('is-open');backdrop.hidden=true;menu.setAttribute('aria-expanded','false');}
 function refreshDashboard(){
  stats.replaceChildren();
- const values=[['Selected radio',$('model-name')?.textContent||'Not selected'],['Channels',$('count')?.textContent.replace(/[()]/g,'')||'0'],['USB connection',$('connection-state')?.textContent||'Disconnected'],['Saved profiles',String(Math.max(0,($('profiles')?.options.length||1)-1))]];
- for(const [label,value] of values){const card=document.createElement('article');card.className='stat-card';const small=document.createElement('span');small.textContent=label;const strong=document.createElement('strong');strong.textContent=value;card.append(small,strong);stats.append(card);}
+ const values=[['Selected radio',$('model-name')?.textContent||'Not selected'],['Channels',$('count')?.textContent.replace(/[()]/g,'')||'0'],['Connection Status',null],['Saved profiles',String(Math.max(0,($('profiles')?.options.length||1)-1))]];
+ for(const [label,value] of values){
+  const card=document.createElement('article');card.className='stat-card';
+  const small=document.createElement('span');small.textContent=label;card.append(small);
+  if(label==='Connection Status'){
+   const details=document.createElement('div');details.className='dashboard-connection-status';
+   for(const [name,id] of [['USB','usb-indicator-status'],['Radio','radio-indicator-status']]){
+    const source=$(id);
+    const row=document.createElement('div');row.className='dashboard-connection-line';
+    const dot=document.createElement('span');dot.className='dashboard-connection-dot';
+    dot.dataset.state=source?.closest('.radio-indicator')?.dataset.state||'inactive';
+    dot.setAttribute('aria-hidden','true');
+    const labelText=document.createElement('span');labelText.textContent=name+':';
+    const valueText=document.createElement('strong');valueText.textContent=source?.textContent||(name==='USB'?'Disconnected':'Not identified');
+    row.append(dot,labelText,valueText);details.append(row);
+   }
+   card.append(details);
+  }else{const strong=document.createElement('strong');strong.textContent=value;card.append(strong);}
+  stats.append(card);
+ }
 }
 let current='';
 function navigate(id,{updateHash=true}={}){
