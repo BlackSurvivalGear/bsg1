@@ -225,3 +225,18 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] > .status:first-child #connection,.workspace-view[data-workspace="radios"] > .status:first-child #simulator-identity{margin:0;text-align:center;overflow-wrap:anywhere;max-width:100%}
 .workspace-view[data-workspace="radios"] > .status:first-child > .actions{justify-content:center;width:100%}
 @media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-selection-row{flex-direction:column}}
+
+
+/* Unified Radio Manager: Channel Editor is a matching self-contained card. */
+.workspace-view[data-workspace="radios"] .radio-editor-card{
+ margin:18px 0;padding:22px;background:linear-gradient(120deg,#192a1b,#111912);
+ border:1px solid #39523a;border-radius:14px;min-width:0;
+}
+.workspace-view[data-workspace="radios"] .radio-editor-heading{margin-bottom:14px}
+.workspace-view[data-workspace="radios"] .radio-editor-heading .toolbar{gap:14px}
+.workspace-view[data-workspace="radios"] .radio-editor-heading .toolbar h2{margin:0}
+.workspace-view[data-workspace="radios"] .radio-editor-heading .actions{justify-content:flex-start}
+.workspace-view[data-workspace="radios"] .radio-editor-description{color:#adc0ad;margin:8px 0 0;font-size:.88rem}
+.workspace-view[data-workspace="radios"] .radio-editor-card > p{color:#adc0ad;line-height:1.55;margin:12px 0 16px}
+.workspace-view[data-workspace="radios"] .radio-editor-card .table-wrap{background:#0c150e}
+@media(max-width:760px){.workspace-view[data-workspace="radios"] .radio-editor-card{padding:16px}}
