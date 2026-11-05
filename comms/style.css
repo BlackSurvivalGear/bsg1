@@ -267,3 +267,16 @@ main{max-width:none;padding:0;margin:0}
 .dashboard-connection-dot[data-state="connected"]{background:#54c67a}
 .dashboard-connection-dot[data-state="pending"]{background:#e7b956}
 .dashboard-connection-dot[data-state="simulation"]{background:#68aef1}
+
+
+/* Collapsible USB transport diagnostics in Radio Manager. */
+.workspace-view[data-workspace="radios"] .usb-diagnostics-panel{
+ width:min(100%,760px);text-align:left;background:#101a13;border:1px solid #405444;border-radius:10px;padding:12px 16px;
+}
+.workspace-view[data-workspace="radios"] .usb-diagnostics-panel summary{cursor:pointer;color:#e6c47b;font-weight:700}
+.workspace-view[data-workspace="radios"] .usb-diagnostics-panel .usb-diagnostics-info{
+ margin:12px 0;max-height:190px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;
+ background:#09120b;border-radius:8px;padding:12px;color:#c6d5c4;font-size:.78rem;line-height:1.5;
+}
+.workspace-view[data-workspace="radios"] .usb-diagnostics-panel .actions{justify-content:flex-start}
+.workspace-view[data-workspace="radios"] .usb-diagnostics-panel p{margin:10px 0 0;text-align:left;font-size:.8rem}
