@@ -3,6 +3,7 @@ import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
+import {runFamilyMockRead} from './uv5r-family-mock.js';
 import {validateVirtualMemory} from './virtual-memory-validation.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
@@ -68,7 +69,9 @@ $('simulate').onclick=async()=>{try{
   virtualRadio=new VirtualRadio({model});
   virtualDriver=new NativeRadioDriver({transport:virtualRadio,model});
   const identity=await virtualDriver.identify();
-  simulatorIdentity.textContent='Virtual radio: '+identity.model+' · '+identity.firmware+' (simulated, not physical hardware)';
+  const familyMock=['uv-5r','bf-f8hp'].includes(model)?await runFamilyMockRead(model):null;
+  simulatorIdentity.textContent='Virtual radio: '+identity.model+' · '+identity.firmware+' (simulated, not physical hardware)'+(familyMock?' · '+familyMock.blockLength+'-byte protocol mock passed (synthetic data)':'');
+  if(familyMock)addDiagnostic('Offline '+model+' mock protocol: 64-byte framed read validated; not hardware verified');
   addDiagnostic('Virtual radio identified: '+identity.model+' (simulated)');
 }catch(e){virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio unavailable.';addDiagnostic('Simulator error: '+e.message);try{if(connectionManager.mode==='simulation')await connectionManager.disconnect();}catch{}alert(e.message);}};
 simulatorRead.onclick=async()=>{

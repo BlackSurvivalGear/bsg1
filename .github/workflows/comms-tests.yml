@@ -1,0 +1,21 @@
+name: BSG COMMS Node tests
+on:
+  pull_request:
+    paths:
+      - 'comms/**'
+      - '.github/workflows/comms-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'comms/**'
+      - '.github/workflows/comms-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run COMMS tests
+        run: node --test comms/tests/*.test.mjs
