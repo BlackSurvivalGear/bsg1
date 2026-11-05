@@ -42,6 +42,10 @@ simulatorRead.textContent='Read virtual radio';simulatorRead.disabled=true;
 // My Radios is visible in the tabbed shell; diagnostics may be hidden.
 $('simulate').after(simulatorRead);
 simulatorRead.after(identityPreview);
+const selectionRow=document.createElement('div');
+selectionRow.className='radio-selection-row';
+selectionRow.append(document.querySelector('label[for="radio-model"]'),$('radio-model'),identityPreview);
+$('model-name').after(selectionRow);
 $('connection').after(simulatorIdentity);
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
