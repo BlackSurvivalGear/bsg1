@@ -330,3 +330,24 @@ main{max-width:none;padding:0;margin:0}
 @media(max-width:650px){
  .workspace-view[data-workspace="radios"] .connection-diagnostics-grid{grid-template-columns:1fr}
 }
+
+/* Radio Manager V3: presentation-only future hardware controls; preserve V2 static handlers. */
+.workspace-view[data-workspace="radios"] .radio-programming-panel{
+ width:min(100%,740px);box-sizing:border-box;padding:14px;
+ border:1px solid #405444;border-radius:12px;background:#101a13;text-align:center;
+}
+.workspace-view[data-workspace="radios"] .radio-programming-panel h3{margin:0 0 8px;color:#e6c47b;font-size:1rem}
+.workspace-view[data-workspace="radios"] .radio-programming-panel p{margin:0 0 12px;color:#adc0ad;font-size:.82rem;line-height:1.5}
+.workspace-view[data-workspace="radios"] .radio-programming-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+}
+.workspace-view[data-workspace="radios"] .radio-programming-grid button{min-width:0;width:100%}
+.workspace-view[data-workspace="radios"] .radio-programming-grid button:disabled,
+.workspace-view[data-workspace="radios"] #usb-disconnect-placeholder:disabled,
+.workspace-view[data-workspace="radios"] #radio-read-identity-placeholder:disabled,
+.workspace-view[data-workspace="radios"] #radio-verify-placeholder:disabled{
+ opacity:.52;cursor:not-allowed;
+}
+@media(max-width:560px){
+ .workspace-view[data-workspace="radios"] .radio-programming-grid{grid-template-columns:1fr}
+}
