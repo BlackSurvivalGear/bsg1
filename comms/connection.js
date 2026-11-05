@@ -58,7 +58,7 @@ export class ConnectionManager {
     }finally{
       if(port)try{await port.close();if(opened)this.onLog('USB connection test: port closed');}
       catch(error){this.onLog('USB connection test: port close failed: '+error.message);throw error;}
-      this.testingUSB=false;
+      finally{this.testingUSB=false;}
     }
   }
   connectSimulator(){
