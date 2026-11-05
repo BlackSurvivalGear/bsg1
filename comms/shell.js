@@ -30,7 +30,14 @@ function view(id){const panel=document.createElement('section');panel.className=
 const dashboard=view('dashboard');
 const stats=document.createElement('div');stats.className='dashboard-stats';dashboard.append(stats);
 const shortcuts=document.createElement('div');shortcuts.className='dashboard-shortcuts';dashboard.append(shortcuts);
-const radios=view('radios');radios.append(radio,toolbar,editorHelp,editorTable,profiles);
+const radios=view('radios');
+const editorCard=document.createElement('section');editorCard.className='radio-editor-card';
+const editorHeading=document.createElement('div');editorHeading.className='radio-editor-heading';
+const editorDescription=document.createElement('p');editorDescription.className='radio-editor-description';
+editorDescription.textContent='Manage frequencies and channel configurations';
+editorHeading.append(toolbar,editorDescription);
+editorCard.append(editorHeading,editorHelp,editorTable);
+radios.append(radio,editorCard,profiles);
 view('repeaters').append(repeater);
 view('sdr').append(sdr);
 for(const id of ['frequencies','operations','tools','academy']){
