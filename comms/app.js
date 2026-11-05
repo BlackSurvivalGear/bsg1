@@ -2,6 +2,7 @@ import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sd
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
+import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
 import {radioConnectionIndicators} from './radio-connection-indicators.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
@@ -61,6 +62,33 @@ usbCopy.onclick=async()=>{
  try{await navigator.clipboard.writeText(currentUSBReport());usbCopy.textContent='Copied';}
  catch{usbCopy.textContent='Copy unavailable';}
 };
+const radioDiagnosticsPanel=$('radio-diagnostics-panel');
+const radioDiagnosticsInfo=$('radio-diagnostics-info');
+const radioFeedback=$('radio-diagnostics-feedback');
+const radioEvents=[];
+let simulatedIdentity=null;
+let simulatedProtocolMock=null;
+function currentRadioReport(){
+ return formatRadioDiagnosticExport(radioDiagnosticSummary({
+  ...connectionManager.snapshot(),model,identity:simulatedIdentity,protocolMock:simulatedProtocolMock
+ }),radioEvents);
+}
+function refreshRadioDiagnostics(){
+ radioDiagnosticsInfo.textContent=currentRadioReport();
+ radioFeedback.textContent='Snapshot refreshed — '+new Date().toLocaleTimeString();
+}
+$('radio-refresh').onclick=refreshRadioDiagnostics;
+$('radio-clear').onclick=()=>{radioEvents.length=0;refreshRadioDiagnostics();radioFeedback.textContent='Radio event log cleared';};
+$('radio-copy').onclick=async()=>{
+ try{await navigator.clipboard.writeText(currentRadioReport());$('radio-copy').textContent='Copied';}
+ catch{$('radio-copy').textContent='Copy unavailable';}
+};
+radioDiagnosticsPanel.addEventListener('toggle',()=>{if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();});
+function logRadioEvent(message){
+ radioEvents.push(new Date().toLocaleTimeString()+' — '+message);
+ if(radioEvents.length>30)radioEvents.shift();
+ if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();
+}
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
   const entry=document.createElement('li');
@@ -74,6 +102,7 @@ const connectionManager=new ConnectionManager({
   onChange:({state,mode,info,baudRate})=>{
     updateConnectionIndicators({state,mode});
     if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
+    if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     identityPreview.disabled=busy||state==='connected';
@@ -99,6 +128,7 @@ identityPreview.onclick=async()=>{
     const result=await previewRadioIdentity(model,{consent:true});
     simulatorIdentity.textContent='Identity preview: '+result.display+' · SYNTHETIC';
     addDiagnostic('Offline '+model+' identity preview completed; synthetic, model unconfirmed, no USB commands');
+    logRadioEvent('Synthetic identity preview for '+model+'; no hardware verified');
   }catch(error){addDiagnostic('BF-F8HP preview failed: '+error.message);alert(error.message);}
   finally{identityPreview.disabled=connectionManager.state!=='disconnected';}
 };
@@ -108,11 +138,14 @@ $('simulate').onclick=async()=>{try{
   virtualRadio=new VirtualRadio({model});
   virtualDriver=new NativeRadioDriver({transport:virtualRadio,model});
   const identity=await virtualDriver.identify();
+  simulatedIdentity=identity.firmware;
+  simulatedProtocolMock=null;
   const familyMock=['uv-5r','bf-f8hp'].includes(model)?await runFamilyMockRead(model):null;
   simulatorIdentity.textContent='Virtual radio: '+identity.model+' · '+identity.firmware+' (simulated, not physical hardware)'+(familyMock?' · '+familyMock.blockLength+'-byte protocol mock passed (synthetic data)':'');
-  if(familyMock)addDiagnostic('Offline '+model+' mock protocol: 64-byte framed read validated; not hardware verified');
+  if(familyMock){simulatedProtocolMock=familyMock.blockLength;addDiagnostic('Offline '+model+' mock protocol: 64-byte framed read validated; not hardware verified');}
   addDiagnostic('Virtual radio identified: '+identity.model+' (simulated)');
-}catch(e){virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio unavailable.';addDiagnostic('Simulator error: '+e.message);try{if(connectionManager.mode==='simulation')await connectionManager.disconnect();}catch{}alert(e.message);}};
+  logRadioEvent('Virtual radio '+identity.model+' identified; synthetic only');
+}catch(e){virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio unavailable.';simulatedIdentity=null;simulatedProtocolMock=null;logRadioEvent('Simulator error: '+e.message);addDiagnostic('Simulator error: '+e.message);try{if(connectionManager.mode==='simulation')await connectionManager.disconnect();}catch{}alert(e.message);}};
 simulatorRead.onclick=async()=>{
   if(connectionManager.mode!=='simulation'||!virtualDriver)return;
   simulatorRead.disabled=true;
@@ -121,12 +154,12 @@ simulatorRead.onclick=async()=>{
     const incoming=validateVirtualMemory(memory,model).channels;
     if(incoming.length>1000)throw Error('Maximum 1000 channels');
     if(confirm('Load '+incoming.length+' SIMULATED channels into the editor? This replaces the current local channel list.')){
-      channels=incoming;render();addDiagnostic('Loaded '+incoming.length+' simulated channels into the editor');
+      channels=incoming;render();addDiagnostic('Loaded '+incoming.length+' simulated channels into the editor');logRadioEvent('Read '+incoming.length+' synthetic channels');
     }else addDiagnostic('Simulated memory read cancelled by user');
   }catch(e){addDiagnostic('Virtual memory read failed: '+e.message);alert(e.message);}
   finally{simulatorRead.disabled=connectionManager.mode!=='simulation'||connectionManager.state!=='connected';}
 };
-$('disconnect').onclick=async()=>{try{await connectionManager.disconnect();virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio not connected.';}catch(e){alert('Disconnect failed: '+e.message);}};
+$('disconnect').onclick=async()=>{try{await connectionManager.disconnect();virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio not connected.';simulatedIdentity=null;simulatedProtocolMock=null;logRadioEvent('Radio disconnected');}catch(e){alert('Disconnect failed: '+e.message);}};
 connectionManager.setState('disconnected');
 addDiagnostic('Diagnostics ready. No radio read/write commands are available.');
 
