@@ -128,8 +128,8 @@ test('programming actions use prominent distinct colours while preserving disabl
 });
 test('USB and Radio diagnostics retain collapsible controls and brighter gold summaries',()=>{
  const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- assert.ok(css.includes('>.usb-diagnostics-panel>summary{color:#ffd477'));
- assert.ok(css.includes('font-size:1.05rem;font-weight:800'));
+ assert.ok(css.includes('>.usb-diagnostics-panel>summary{color:#b5c6b3'));
+ assert.ok(css.includes('font-size:.79rem;font-weight:600'));
  for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
   assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
  }
@@ -137,8 +137,8 @@ test('USB and Radio diagnostics retain collapsible controls and brighter gold su
 
 test('connection columns align and diagnostic disclosures remain compact',()=>{
  const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- assert.ok(css.includes('.radio-connection-stack{display:grid;grid-template-rows:minmax(0,1fr) auto'));
- assert.ok(css.includes('.radio-connection-controls{align-items:stretch}'));
+ assert.ok(css.includes('.radio-connection-stack{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;align-self:start;height:auto'));
+ assert.ok(css.includes('.radio-connection-controls{align-items:start}'));
  assert.ok(css.includes('font-size:.79rem;font-weight:600'));
  assert.ok(css.includes('border:1px solid #435646;background:#142017'));
  for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
@@ -146,5 +146,15 @@ test('connection columns align and diagnostic disclosures remain compact',()=>{
  }
  for(const id of ['usb-refresh','usb-clear','usb-copy','radio-refresh','radio-clear','radio-copy']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+});
+
+test('expanding one diagnostics disclosure does not stretch its sibling connection stack',()=>{
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(css.includes('.radio-connection-stack>.radio-control-column{flex:none;height:auto;min-height:230px'));
+ assert.ok(css.includes('.radio-connection-stack>.usb-diagnostics-panel{flex:none;align-self:stretch;height:auto;min-height:0;max-height:320px;overflow:auto}'));
+ assert.ok(css.includes('@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-stack>.radio-control-column{min-height:0}}'));
+ for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
+  assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
  }
 });
