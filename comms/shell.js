@@ -30,8 +30,7 @@ function view(id){const panel=document.createElement('section');panel.className=
 const dashboard=view('dashboard');
 const stats=document.createElement('div');stats.className='dashboard-stats';dashboard.append(stats);
 const shortcuts=document.createElement('div');shortcuts.className='dashboard-shortcuts';dashboard.append(shortcuts);
-const radios=view('radios');radios.append(radio,profiles);
-const channels=view('channels');channels.append(toolbar,editorHelp,editorTable);
+const radios=view('radios');radios.append(radio,toolbar,editorHelp,editorTable,profiles);
 view('repeaters').append(repeater);
 view('sdr').append(sdr);
 for(const id of ['frequencies','operations','tools','academy']){
@@ -73,7 +72,7 @@ for(const item of WORKSPACES){
  const text=document.createElement('span');text.textContent=item.title;button.append(text);
  if(!item.ready){const tag=document.createElement('small');tag.textContent='SOON';button.append(tag);}
  button.addEventListener('click',()=>navigate(item.id));nav.append(button);
- if(['channels','repeaters','sdr','frequencies','radios','operations','tools','academy'].includes(item.id)){
+ if(['repeaters','sdr','frequencies','radios','operations','tools','academy'].includes(item.id)){
   const card=document.createElement('button');card.type='button';card.className='shortcut-card';
   const name=document.createElement('strong');name.textContent=item.title;
   const description=document.createElement('span');description.textContent=item.description;
