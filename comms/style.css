@@ -351,3 +351,23 @@ main{max-width:none;padding:0;margin:0}
 @media(max-width:560px){
  .workspace-view[data-workspace="radios"] .radio-programming-grid{grid-template-columns:1fr}
 }
+
+/* V3 final layout: keep controls and diagnostics in their own connection stacks. */
+.workspace-view[data-workspace="radios"] .radio-connection-controls{align-items:start}
+.workspace-view[data-workspace="radios"] .radio-connection-stack{display:flex;flex-direction:column;gap:10px;min-width:0;height:100%}
+.workspace-view[data-workspace="radios"] .radio-connection-stack .radio-control-column{width:100%;box-sizing:border-box;flex:1}
+.workspace-view[data-workspace="radios"] .radio-action-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.workspace-view[data-workspace="radios"] .radio-control-column .radio-action-pair button{width:100%;max-width:none;min-width:0;white-space:normal}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel{width:100%;box-sizing:border-box;max-height:320px}
+.workspace-view[data-workspace="radios"] .radio-memory-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.workspace-view[data-workspace="radios"] .radio-memory-group{display:flex;flex-direction:column;gap:9px;min-width:0;padding:12px;border:1px solid #405444;border-radius:10px;background:#0d170f}
+.workspace-view[data-workspace="radios"] .radio-memory-group h4{margin:0;color:#e6c47b;font-size:.9rem}
+.workspace-view[data-workspace="radios"] .radio-memory-group>button{width:100%;min-width:0}
+.workspace-view[data-workspace="radios"] .radio-memory-backup{margin-top:10px}
+.workspace-view[data-workspace="radios"] .radio-memory-backup .radio-action-pair button{min-width:0;width:100%}
+.workspace-view[data-workspace="radios"] .radio-programming-panel>p{margin:12px 0 0}
+@media(max-width:560px){
+ .workspace-view[data-workspace="radios"] .radio-memory-groups{grid-template-columns:1fr}
+ .workspace-view[data-workspace="radios"] .radio-action-pair{gap:6px}
+ .workspace-view[data-workspace="radios"] .radio-action-pair button{font-size:.75rem;padding:9px 5px}
+}
