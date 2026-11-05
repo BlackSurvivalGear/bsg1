@@ -35,8 +35,9 @@ class WebsiteTests(unittest.TestCase):
         self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
         self.assertIn('BSG COMMS', comms)
         self.assertIn('href="../dashboard/"', comms)
-        self.assertIn('disabled title="Requires verified model-specific read protocol"', comms)
-        self.assertIn('disabled title="Requires verified model-specific write protocol"', comms)
+        self.assertIn('id="radio-read-placeholder" type="button" disabled', comms)
+        self.assertIn('id="radio-write-placeholder" type="button" disabled', comms)
+        self.assertIn('id="radio-restore-placeholder" type="button" disabled', comms)
 
     def test_comms_logo_uses_existing_asset(self):
         html = (ROOT/'comms'/'index.html').read_text()
