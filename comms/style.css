@@ -412,3 +412,14 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:hover{color:#ffe4a3;background:#263824}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:focus-visible{outline:3px solid #ffd477;outline-offset:-3px}
 @media(max-width:900px){.workspace-view[data-workspace="radios"] .radio-editor-program-actions button{font-size:.85rem;min-height:46px;padding:9px 12px}}
+
+
+/* Align both connection columns; diagnostics are compact secondary disclosures. */
+.workspace-view[data-workspace="radios"] .radio-connection-controls{align-items:stretch}
+.workspace-view[data-workspace="radios"] .radio-connection-stack{display:grid;grid-template-rows:minmax(0,1fr) auto;align-items:stretch;height:100%;gap:9px}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.radio-control-column{height:100%;min-height:0;box-sizing:border-box}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel{align-self:end;box-sizing:border-box;width:100%;min-width:0;margin:0;border:1px solid #435646;background:#142017;border-radius:7px;box-shadow:none;max-height:320px}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary{color:#b5c6b3;font-size:.79rem;font-weight:600;letter-spacing:0;padding:8px 11px;line-height:1.25;cursor:pointer;background:transparent}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:hover{color:#e2e9df;background:#1b2c20}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:focus-visible{outline:2px solid #b5c6b3;outline-offset:-2px}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-stack{grid-template-rows:auto auto;height:auto}}
