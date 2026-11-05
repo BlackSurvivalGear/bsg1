@@ -134,3 +134,17 @@ test('USB and Radio diagnostics retain collapsible controls and brighter gold su
   assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
  }
 });
+
+test('connection columns align and diagnostic disclosures remain compact',()=>{
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(css.includes('.radio-connection-stack{display:grid;grid-template-rows:minmax(0,1fr) auto'));
+ assert.ok(css.includes('.radio-connection-controls{align-items:stretch}'));
+ assert.ok(css.includes('font-size:.79rem;font-weight:600'));
+ assert.ok(css.includes('border:1px solid #435646;background:#142017'));
+ for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
+  assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
+ }
+ for(const id of ['usb-refresh','usb-clear','usb-copy','radio-refresh','radio-clear','radio-copy']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+});
