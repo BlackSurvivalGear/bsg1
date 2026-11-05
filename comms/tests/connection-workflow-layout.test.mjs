@@ -64,3 +64,17 @@ test('V3 keeps existing working controls and avoids duplicate physical actions',
  assert.ok(app.includes("$('disconnect').onclick"));
  assert.ok(app.includes('simulatorRead.onclick=async()=>'));
 });
+
+test('simulated connection and identity are clearly labelled and grouped in Radio Connection',()=>{
+ assert.match(html,/<button id="simulate"[^>]*>Connect Radio \(Simulated\)<\/button>/);
+ assert.match(html,/<button id="bff8hp-identification-preview"[^>]*>Identify Radio \(Simulated\)<\/button>/);
+ const radioStart=html.indexOf('id="radio-indicator"');
+ const radioEnd=html.indexOf('</div>',html.indexOf('id="radio-verify-placeholder"'));
+ const simulator=html.indexOf('id="simulate"');
+ const identity=html.indexOf('id="bff8hp-identification-preview"');
+ assert.ok(radioStart<simulator && simulator<identity && identity<radioEnd);
+ const selection=html.slice(html.indexOf('class="radio-selection-row"'),html.indexOf('class="radio-connection-controls"'));
+ assert.ok(!selection.includes('bff8hp-identification-preview'));
+ assert.ok(app.includes('identityPreview.onclick=async()=>'));
+ assert.ok(app.includes("$('simulate').onclick=async()=>"));
+});
