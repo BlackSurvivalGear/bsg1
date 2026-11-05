@@ -107,6 +107,7 @@ const connectionManager=new ConnectionManager({
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     identityPreview.disabled=busy||state==='connected';
     $('connect').disabled=busy||state==='connected';
+    $('usb-test').disabled=busy||state==='connected';
     $('simulate').disabled=busy||state==='connected';
     $('disconnect').disabled=busy||state==='disconnected';
     $('connection-state').textContent=state==='connected'?(mode==='simulation'?'Simulator connected':'USB port connected'):state;
@@ -133,6 +134,33 @@ identityPreview.onclick=async()=>{
   finally{identityPreview.disabled=connectionManager.state!=='disconnected';}
 };
 $('connect').onclick=async()=>{try{await connectionManager.connectUSB();}catch(e){alert('Connection failed: '+e.message);}};
+$('usb-test').onclick=async()=>{
+  if(connectionManager.state!=='disconnected')return;
+  const button=$('usb-test');
+  button.disabled=true;
+  $('connect').disabled=true;
+  $('simulate').disabled=true;
+  identityPreview.disabled=true;
+  button.textContent='Testing USB…';
+  usbDiagnosticsPanel.open=true;
+  usbFeedback.textContent='Testing USB serial port. No radio commands will be sent.';
+  try{
+    const result=await connectionManager.testUSBConnection();
+    refreshUSBDiagnostics();
+    usbFeedback.textContent=result.status==='passed'
+      ?'USB port opened and closed successfully · '+result.info.vendorId+' / '+result.info.productId+' · radio identity unverified'
+      :'USB port selection cancelled. No changes made.';
+  }catch(error){
+    refreshUSBDiagnostics();
+    usbFeedback.textContent='USB connection test failed: '+error.message;
+  }finally{
+    button.textContent='Test USB Connection';
+    button.disabled=connectionManager.state!=='disconnected';
+    $('connect').disabled=connectionManager.state!=='disconnected';
+    $('simulate').disabled=connectionManager.state!=='disconnected';
+    identityPreview.disabled=connectionManager.state!=='disconnected';
+  }
+};
 $('simulate').onclick=async()=>{try{
   connectionManager.connectSimulator();
   virtualRadio=new VirtualRadio({model});
