@@ -63,6 +63,21 @@ function indicator(label,id){
 const usbIndicator=indicator('USB Connection','usb-indicator-status');
 const radioIndicator=indicator('Radio Connection','radio-indicator-status');
 selectionRow.after(indicatorRow);
+const connectionActions=document.querySelector('.workspace-view[data-workspace="radios"] .status > .actions')||$('connect').parentElement;
+const controlGrid=document.createElement('div');controlGrid.className='radio-connection-controls';
+const usbColumn=document.createElement('div');usbColumn.className='radio-control-column';
+const radioColumn=document.createElement('div');radioColumn.className='radio-control-column';
+usbColumn.append(usbIndicator,$('connect'));
+radioColumn.append(radioIndicator,$('simulate'));
+$('simulate').textContent='Connect Radio (Simulate)';
+$('simulate').title='Connect to a simulated radio only; physical radio identification is not supported';
+controlGrid.append(usbColumn,radioColumn);
+const readRow=document.createElement('div');readRow.className='radio-read-row';readRow.append(simulatorRead);
+const secondaryRow=document.createElement('div');secondaryRow.className='radio-secondary-row';
+secondaryRow.append($('radio-settings-open'),$('disconnect'));
+connectionActions.replaceChildren(controlGrid,readRow,secondaryRow);
+connectionActions.classList.add('radio-workflow-actions');
+
 function updateConnectionIndicators(snapshot){
  const status=radioConnectionIndicators(snapshot);
  for(const [element,value] of [[usbIndicator,status.usb],[radioIndicator,status.radio]]){
@@ -85,12 +100,12 @@ usbDiagnosticsActions.append(usbCopy,usbRefresh);
 const usbDiagnosticsNote=document.createElement('p');
 usbDiagnosticsNote.textContent='USB IDs describe the serial adapter, not the radio. No radio commands, memory reads or writes are performed.';
 usbDiagnosticsPanel.append(usbDiagnosticsTitle,usbDiagnosticsInfo,usbDiagnosticsActions,usbDiagnosticsNote);
-document.querySelector('.radio-connection-indicators').after(usbDiagnosticsPanel);
+connectionActions.after(usbDiagnosticsPanel);
 function currentUSBReport(){
  return formatDiagnosticExport(usbDiagnosticSummary(connectionManager.snapshot()),
   [...$('diagnostic-log').children].map(item=>item.textContent).reverse());
 }
-function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();}
+function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();usbRefresh.textContent='Refreshed';usbRefresh.title='Diagnostic snapshot updated; no new USB activity detected unless events appear';}
 usbRefresh.onclick=refreshUSBDiagnostics;
 usbDiagnosticsPanel.addEventListener('toggle',()=>{if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();});
 usbCopy.onclick=async()=>{
