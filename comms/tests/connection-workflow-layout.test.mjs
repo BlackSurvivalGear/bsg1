@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('radio controls are statically defined exactly once',()=>{
- for(const id of ['radio-model','bff8hp-identification-preview','usb-indicator','usb-indicator-status','radio-indicator','radio-indicator-status','connect','simulate','simulator-read','radio-settings-open','disconnect','usb-diagnostics-panel','usb-refresh','usb-clear','usb-copy','simulator-identity']){
+ for(const id of ['radio-model','bff8hp-identification-preview','usb-indicator','usb-indicator-status','radio-indicator','radio-indicator-status','connect','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','usb-refresh','usb-clear','usb-copy','simulator-identity']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
 });
@@ -13,7 +13,7 @@ test('no runtime reparenting or replacement of radio controls',()=>{
   assert.ok(!app.includes(fragment),fragment);
 });
 test('connection workflow uses original event handlers and diagnostic actions',()=>{
- for(const fragment of ["$('connect').onclick","$('simulate').onclick","$('disconnect').onclick","usbRefresh.onclick=refreshUSBDiagnostics","usbClear.onclick=","usbCopy.onclick="])
+ for(const fragment of ["$('connect').onclick","$('simulate').onclick","$('usb-disconnect').onclick","$('radio-disconnect').onclick","usbRefresh.onclick=refreshUSBDiagnostics","usbClear.onclick=","usbCopy.onclick="])
   assert.ok(app.includes(fragment),fragment);
 });
 test('radio connection and channel editing remain separate',()=>{
@@ -45,4 +45,49 @@ test('USB connection test is a single static control with a safe handler',()=>{
  assert.ok(app.includes("$('usb-test').onclick=async()=>"));
  assert.ok(app.includes('connectionManager.testUSBConnection()'));
  assert.ok(app.includes('usbDiagnosticsPanel.open=true'));
+});
+
+test('V3 future hardware actions are unique disabled static placeholders',()=>{
+ for(const id of ['radio-verify-placeholder','radio-read-placeholder','radio-write-placeholder','radio-verify-write-placeholder','radio-backup-placeholder','radio-restore-placeholder']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+  assert.ok(!app.includes("$('"+id+"')"),id+' must not have a hardware handler');
+ }
+});
+test('V3 keeps existing working controls and avoids duplicate physical actions',()=>{
+ for(const id of ['connect','usb-test','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ assert.ok(html.includes('class="radio-programming-grid"'));
+ assert.ok(!html.includes('Read radio (unavailable)'));
+ assert.ok(!html.includes('Write radio (unavailable)'));
+ assert.ok(app.includes("$('usb-disconnect').onclick","$('radio-disconnect').onclick"));
+ assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+ assert.ok(!html.includes('id="disconnect"'));
+ assert.ok(!html.includes('id="radio-read-identity-placeholder"'));
+});
+
+test('simulated connection and identity are clearly labelled and grouped in Radio Connection',()=>{
+ assert.match(html,/<button id="simulate"[^>]*>Connect Radio \(Simulated\)<\/button>/);
+ assert.match(html,/<button id="bff8hp-identification-preview"[^>]*>Identify Radio \(Simulated\)<\/button>/);
+ const radioStart=html.indexOf('id="radio-indicator"');
+ const radioEnd=html.indexOf('</div>',html.indexOf('id="radio-verify-placeholder"'));
+ const simulator=html.indexOf('id="simulate"');
+ const identity=html.indexOf('id="bff8hp-identification-preview"');
+ assert.ok(radioStart<simulator && simulator<identity && identity<radioEnd);
+ const selection=html.slice(html.indexOf('class="radio-selection-row"'),html.indexOf('class="radio-connection-controls"'));
+ assert.ok(!selection.includes('bff8hp-identification-preview'));
+ assert.ok(app.includes('identityPreview.onclick=async()=>'));
+ assert.ok(app.includes("$('simulate').onclick=async()=>"));
+});
+
+test('USB and simulator disconnect controls are mode-aware and do not send radio commands',()=>{
+ assert.match(html,/<button id="usb-disconnect" type="button" disabled[^>]*>Disconnect USB<\/button>/);
+ assert.match(html,/<button id="radio-disconnect" type="button" disabled[^>]*>Disconnect Radio<\/button>/);
+ assert.ok(app.includes("connectionManager.mode!=='usb'||connectionManager.state!=='connected'"));
+ assert.ok(app.includes("connectionManager.mode!=='simulation'||connectionManager.state!=='connected'"));
+ assert.ok(app.includes("$('usb-disconnect').disabled=busy||state!=='connected'||mode!=='usb'"));
+ assert.ok(app.includes("$('radio-disconnect').disabled=busy||state!=='connected'||mode!=='simulation'"));
+ assert.ok(app.includes('await connectionManager.disconnect()'));
+ assert.ok(!html.includes('id="disconnect"'));
 });

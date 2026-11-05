@@ -109,7 +109,8 @@ const connectionManager=new ConnectionManager({
     $('connect').disabled=busy||state==='connected';
     $('usb-test').disabled=busy||state==='connected';
     $('simulate').disabled=busy||state==='connected';
-    $('disconnect').disabled=busy||state==='disconnected';
+    $('usb-disconnect').disabled=busy||state!=='connected'||mode!=='usb';
+    $('radio-disconnect').disabled=busy||state!=='connected'||mode!=='simulation';
     $('connection-state').textContent=state==='connected'?(mode==='simulation'?'Simulator connected':'USB port connected'):state;
     $('connection').textContent=state==='connected'
       ?(mode==='simulation'?'Simulation only — no hardware connected.':'Serial transport open. Radio identity and programming protocol are unverified.')
@@ -187,7 +188,21 @@ simulatorRead.onclick=async()=>{
   }catch(e){addDiagnostic('Virtual memory read failed: '+e.message);alert(e.message);}
   finally{simulatorRead.disabled=connectionManager.mode!=='simulation'||connectionManager.state!=='connected';}
 };
-$('disconnect').onclick=async()=>{try{await connectionManager.disconnect();virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio not connected.';simulatedIdentity=null;simulatedProtocolMock=null;logRadioEvent('Radio disconnected');}catch(e){alert('Disconnect failed: '+e.message);}};
+$('usb-disconnect').onclick=async()=>{
+  if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
+  try{await connectionManager.disconnect();}
+  catch(e){alert('USB disconnect failed: '+e.message);}
+};
+$('radio-disconnect').onclick=async()=>{
+  if(connectionManager.mode!=='simulation'||connectionManager.state!=='connected')return;
+  try{
+    await connectionManager.disconnect();
+    virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;
+    simulatorIdentity.textContent='Virtual radio not connected.';
+    simulatedIdentity=null;simulatedProtocolMock=null;
+    logRadioEvent('Simulated radio disconnected');
+  }catch(e){alert('Radio disconnect failed: '+e.message);}
+};
 connectionManager.setState('disconnected');
 addDiagnostic('Diagnostics ready. No radio read/write commands are available.');
 
