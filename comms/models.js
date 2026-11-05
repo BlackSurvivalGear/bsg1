@@ -1,7 +1,8 @@
 export const MODELS=Object.freeze([
 {id:'uv-5r',name:'Baofeng UV-5R'},
 {id:'uv-16-pro-v2',name:'Baofeng UV-16 Pro V2'},
-{id:'uv-32',name:'Baofeng UV-32'}
+{id:'uv-32',name:'Baofeng UV-32'},
+{id:'bf-f8hp',name:'Baofeng BF-F8HP'}
 ]);
 export const DEFAULT_MODEL='uv-16-pro-v2';
 export function isModel(id){return MODELS.some(model=>model.id===id);}
