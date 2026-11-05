@@ -38,6 +38,27 @@ export class ConnectionManager {
       else {this.onLog('USB connection failed: '+(error?.message??String(error)));throw error;}
     }
   }
+  async testUSBConnection(){
+    if(this.state!=='disconnected')throw Error('Disconnect before testing another USB port');
+    if(!this.serial?.requestPort)throw Error('Web Serial is unavailable. Use desktop Chrome or Edge over HTTPS.');
+    let port,opened=false;
+    try{
+      port=await this.serial.requestPort();
+      if(!port)return {status:'cancelled'};
+      await port.open(SERIAL_OPTIONS);
+      opened=true;
+      const info=formatUSBInfo(port.getInfo?.()??{});
+      this.onLog('USB connection test: port opened; vendor '+info.vendorId+', product '+info.productId+'; no radio commands sent');
+      return {status:'passed',info,baudRate:SERIAL_OPTIONS.baudRate,radioIdentity:'Unverified'};
+    }catch(error){
+      if(error?.name==='NotFoundError'){this.onLog('USB connection test cancelled');return {status:'cancelled'};}
+      this.onLog('USB connection test failed: '+(error?.message??String(error)));
+      throw error;
+    }finally{
+      if(port)try{await port.close();if(opened)this.onLog('USB connection test: port closed');}
+      catch(error){this.onLog('USB connection test: port close failed: '+error.message);throw error;}
+    }
+  }
   connectSimulator(){
     if(this.state!=='disconnected')throw Error('Disconnect before starting simulator');
     this.port=null;this.mode='simulation';this.info={};
