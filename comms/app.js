@@ -63,7 +63,9 @@ function indicator(label,id){
 const usbIndicator=indicator('USB Connection','usb-indicator-status');
 const radioIndicator=indicator('Radio Connection','radio-indicator-status');
 selectionRow.after(indicatorRow);
-const connectionActions=document.querySelector('.workspace-view[data-workspace="radios"] .status > .actions')||$('connect').parentElement;
+// Capture the original action container before moving any buttons. shell.js
+// may not have mounted workspace views when this module runs.
+const connectionActions=$('connect').parentElement;
 const controlGrid=document.createElement('div');controlGrid.className='radio-connection-controls';
 const usbColumn=document.createElement('div');usbColumn.className='radio-control-column';
 const radioColumn=document.createElement('div');radioColumn.className='radio-control-column';
