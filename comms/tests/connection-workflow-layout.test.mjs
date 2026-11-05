@@ -13,7 +13,7 @@ test('no runtime reparenting or replacement of radio controls',()=>{
   assert.ok(!app.includes(fragment),fragment);
 });
 test('connection workflow uses original event handlers and diagnostic actions',()=>{
- for(const fragment of ["$('connect').onclick","$('simulate').onclick","$('usb-disconnect','radio-disconnect').onclick","usbRefresh.onclick=refreshUSBDiagnostics","usbClear.onclick=","usbCopy.onclick="])
+ for(const fragment of ["$('connect').onclick","$('simulate').onclick","$('usb-disconnect').onclick","$('radio-disconnect').onclick","usbRefresh.onclick=refreshUSBDiagnostics","usbClear.onclick=","usbCopy.onclick="])
   assert.ok(app.includes(fragment),fragment);
 });
 test('radio connection and channel editing remain separate',()=>{
@@ -61,7 +61,7 @@ test('V3 keeps existing working controls and avoids duplicate physical actions',
  assert.ok(html.includes('class="radio-programming-grid"'));
  assert.ok(!html.includes('Read radio (unavailable)'));
  assert.ok(!html.includes('Write radio (unavailable)'));
- assert.ok(app.includes("$('usb-disconnect','radio-disconnect').onclick"));
+ assert.ok(app.includes("$('usb-disconnect').onclick","$('radio-disconnect').onclick"));
  assert.ok(app.includes('simulatorRead.onclick=async()=>'));
  assert.ok(!html.includes('id="disconnect"'));
  assert.ok(!html.includes('id="radio-read-identity-placeholder"'));
