@@ -23,10 +23,13 @@ test('radio connection and channel editing remain separate',()=>{
 });
 
 
-test('connection messages precede the collapsible diagnostics panel',()=>{
- const messages=html.indexOf('class="radio-console-messages"');
- const diagnostics=html.indexOf('id="usb-diagnostics-panel"');
- assert.ok(messages>=0 && diagnostics>messages);
+test('connection diagnostics are placed beneath their respective controls',()=>{
+ const usb=html.indexOf('id="usb-indicator"');
+ const usbDiag=html.indexOf('id="usb-diagnostics-panel"');
+ const radio=html.indexOf('id="radio-indicator"');
+ const radioDiag=html.indexOf('id="radio-diagnostics-panel"');
+ const memory=html.indexOf('class="radio-programming-panel"');
+ assert.ok(usb<usbDiag && usbDiag<radio && radio<radioDiag && radioDiag<memory);
 });
 
 
@@ -58,10 +61,11 @@ test('V3 keeps existing working controls and avoids duplicate physical actions',
  for(const id of ['connect','usb-test','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
- assert.ok(html.includes('class="radio-programming-grid"'));
+ assert.ok(html.includes('class="radio-memory-groups"'));
  assert.ok(!html.includes('Read radio (unavailable)'));
  assert.ok(!html.includes('Write radio (unavailable)'));
- assert.ok(app.includes("$('usb-disconnect').onclick","$('radio-disconnect').onclick"));
+ assert.ok(app.includes("$('usb-disconnect').onclick"));
+ assert.ok(app.includes("$('radio-disconnect').onclick"));
  assert.ok(app.includes('simulatorRead.onclick=async()=>'));
  assert.ok(!html.includes('id="disconnect"'));
  assert.ok(!html.includes('id="radio-read-identity-placeholder"'));
@@ -90,4 +94,16 @@ test('USB and simulator disconnect controls are mode-aware and do not send radio
  assert.ok(app.includes("$('radio-disconnect').disabled=busy||state!=='connected'||mode!=='simulation'"));
  assert.ok(app.includes('await connectionManager.disconnect()'));
  assert.ok(!html.includes('id="disconnect"'));
+});
+
+test('final V3 groups controls by connection, memory direction and backup purpose',()=>{
+ const usb=html.slice(html.indexOf('id="usb-indicator"'),html.indexOf('id="usb-diagnostics-panel"'));
+ assert.match(usb,/id="connect"[\s\S]*class="radio-action-pair"[\s\S]*id="usb-test"[\s\S]*id="usb-disconnect"/);
+ const radio=html.slice(html.indexOf('id="radio-indicator"'),html.indexOf('id="radio-diagnostics-panel"'));
+ assert.match(radio,/id="simulate"[\s\S]*id="bff8hp-identification-preview"[\s\S]*id="radio-verify-placeholder"[\s\S]*id="radio-settings-open"[\s\S]*id="radio-disconnect"/);
+ const memory=html.slice(html.indexOf('class="radio-memory-groups"'),html.indexOf('class="radio-console-messages"'));
+ assert.match(memory,/<h4>READ<\/h4>[\s\S]*id="radio-read-placeholder"[\s\S]*id="simulator-read"/);
+ assert.match(memory,/<h4>WRITE<\/h4>[\s\S]*id="radio-write-placeholder"[\s\S]*id="radio-verify-write-placeholder"/);
+ assert.match(memory, /BACKUP &amp; RECOVERY[\s\S]*id="radio-backup-placeholder"[\s\S]*id="radio-restore-placeholder"/);
+ assert.equal((html.match(/id="radio-settings-open"/g)||[]).length,1);
 });
