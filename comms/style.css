@@ -214,3 +214,14 @@ main{max-width:none;padding:0;margin:0}
 .workspace-content{position:relative;isolation:isolate}
 .workspace-content::before{content:"";position:fixed;z-index:-1;pointer-events:none;top:50%;left:calc(230px + (100vw - 230px)/2);width:min(54vw,720px);height:min(72vh,720px);transform:translate(-50%,-50%);background:url("../BSG%20GOLD%20LOGO.png") center/contain no-repeat;opacity:.10}
 @media(max-width:760px){.workspace-content::before{left:50%;width:min(86vw,460px);height:min(62vh,460px);opacity:.075}}
+
+
+/* Radio Manager header alignment; other panels retain their existing layout. */
+.workspace-view[data-workspace="radios"] > .status:first-child{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;padding:26px 20px}
+.workspace-view[data-workspace="radios"] > .status:first-child > div:first-child{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;min-width:0}
+.workspace-view[data-workspace="radios"] > .status:first-child #model-name{margin:0}
+.workspace-view[data-workspace="radios"] .radio-selection-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;width:100%}
+.workspace-view[data-workspace="radios"] .radio-selection-row #radio-model{max-width:100%}
+.workspace-view[data-workspace="radios"] > .status:first-child #connection,.workspace-view[data-workspace="radios"] > .status:first-child #simulator-identity{margin:0;text-align:center;overflow-wrap:anywhere;max-width:100%}
+.workspace-view[data-workspace="radios"] > .status:first-child > .actions{justify-content:center;width:100%}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-selection-row{flex-direction:column}}
