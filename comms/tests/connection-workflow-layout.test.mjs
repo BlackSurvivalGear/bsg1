@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
-test('capture action parent before moving buttons',()=>{
- const capture=source.indexOf("const connectionActions=$('connect').parentElement;");
- const move=source.indexOf("usbColumn.append(usbIndicator,$('connect'))");
- const replace=source.indexOf('connectionActions.replaceChildren(controlGrid,readRow,secondaryRow)');
- assert.ok(capture>=0 && move>capture && replace>move);
+test('working connection controls stay in original action container',()=>{
+ assert.ok(!source.includes('connectionActions.replaceChildren('));
+ assert.ok(!source.includes('usbColumn.append('));
+ assert.ok(!source.includes('radioColumn.append('));
 });
-test('all connection controls remain in workflow',()=>{
- for(const phrase of ["usbColumn.append(usbIndicator,$('connect'))","radioColumn.append(radioIndicator,$('simulate'))",'readRow.append(simulatorRead)',"secondaryRow.append($('radio-settings-open'),$('disconnect'))",'connectionActions.after(usbDiagnosticsPanel)'])assert.ok(source.includes(phrase),phrase);
+test('radio selector and connection buttons remain in original markup',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ for(const id of ['radio-model','connect','simulate','disconnect','radio-settings-open'])assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(source.includes('selectionRow.append('));
+ assert.ok(source.includes('selectionRow.after(indicatorRow)'));
 });
