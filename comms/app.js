@@ -1,6 +1,7 @@
 import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sdr.js';
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
+import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioConnectionIndicators} from './radio-connection-indicators.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
@@ -69,17 +70,46 @@ function updateConnectionIndicators(snapshot){
   element.querySelector('.radio-indicator-detail span:last-child').textContent=value.label;
  }
 }
+const usbDiagnosticsPanel=document.createElement('details');
+usbDiagnosticsPanel.className='usb-diagnostics-panel';
+const usbDiagnosticsTitle=document.createElement('summary');
+usbDiagnosticsTitle.textContent='USB Diagnostics · Transport only';
+const usbDiagnosticsInfo=document.createElement('pre');
+usbDiagnosticsInfo.className='usb-diagnostics-info';
+usbDiagnosticsInfo.setAttribute('aria-live','polite');
+const usbDiagnosticsActions=document.createElement('div');
+usbDiagnosticsActions.className='actions';
+const usbCopy=document.createElement('button');usbCopy.type='button';usbCopy.textContent='Copy diagnostic log';
+const usbRefresh=document.createElement('button');usbRefresh.type='button';usbRefresh.textContent='Refresh diagnostics';
+usbDiagnosticsActions.append(usbCopy,usbRefresh);
+const usbDiagnosticsNote=document.createElement('p');
+usbDiagnosticsNote.textContent='USB IDs describe the serial adapter, not the radio. No radio commands, memory reads or writes are performed.';
+usbDiagnosticsPanel.append(usbDiagnosticsTitle,usbDiagnosticsInfo,usbDiagnosticsActions,usbDiagnosticsNote);
+document.querySelector('.radio-connection-indicators').after(usbDiagnosticsPanel);
+function currentUSBReport(){
+ return formatDiagnosticExport(usbDiagnosticSummary(connectionManager.snapshot()),
+  [...$('diagnostic-log').children].map(item=>item.textContent).reverse());
+}
+function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();}
+usbRefresh.onclick=refreshUSBDiagnostics;
+usbDiagnosticsPanel.addEventListener('toggle',()=>{if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();});
+usbCopy.onclick=async()=>{
+ try{await navigator.clipboard.writeText(currentUSBReport());usbCopy.textContent='Copied';}
+ catch{usbCopy.textContent='Copy unavailable';}
+};
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
   const entry=document.createElement('li');
   entry.textContent=new Date().toLocaleTimeString()+' — '+message;
   diagnostics.prepend(entry);
   while(diagnostics.children.length>30)diagnostics.lastElementChild.remove();
+  if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
 }
 const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
     updateConnectionIndicators({state,mode});
+    if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     identityPreview.disabled=busy||state==='connected';
