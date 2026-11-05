@@ -240,3 +240,19 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-editor-card > p{color:#adc0ad;line-height:1.55;margin:12px 0 16px}
 .workspace-view[data-workspace="radios"] .radio-editor-card .table-wrap{background:#0c150e}
 @media(max-width:760px){.workspace-view[data-workspace="radios"] .radio-editor-card{padding:16px}}
+
+
+/* Independent USB transport and radio verification indicators. */
+.workspace-view[data-workspace="radios"] .radio-connection-indicators{
+ display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:clamp(18px,4vw,52px);width:100%;
+}
+.workspace-view[data-workspace="radios"] .radio-indicator{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:150px}
+.workspace-view[data-workspace="radios"] .radio-indicator-title{font-size:.84rem;font-weight:700;color:#eaf0e9}
+.workspace-view[data-workspace="radios"] .radio-indicator-detail{display:inline-flex;align-items:center;justify-content:center;gap:8px;color:#adc0ad;font-size:.82rem}
+.workspace-view[data-workspace="radios"] .radio-indicator-dot{width:10px;height:10px;border-radius:50%;background:#7b857b;flex:none}
+.workspace-view[data-workspace="radios"] .radio-indicator[data-state="connected"] .radio-indicator-dot{background:#54c67a}
+.workspace-view[data-workspace="radios"] .radio-indicator[data-state="pending"] .radio-indicator-dot{background:#e7b956}
+.workspace-view[data-workspace="radios"] .radio-indicator[data-state="simulation"] .radio-indicator-dot{background:#68aef1}
+.workspace-view[data-workspace="radios"] .radio-indicator[data-state="connected"] .radio-indicator-detail{color:#8fe3a7}
+.workspace-view[data-workspace="radios"] .radio-indicator[data-state="simulation"] .radio-indicator-detail{color:#a1caff}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-indicators{gap:12px}.workspace-view[data-workspace="radios"] .radio-indicator{min-width:125px}}
