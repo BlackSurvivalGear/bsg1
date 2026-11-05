@@ -256,3 +256,14 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-indicator[data-state="connected"] .radio-indicator-detail{color:#8fe3a7}
 .workspace-view[data-workspace="radios"] .radio-indicator[data-state="simulation"] .radio-indicator-detail{color:#a1caff}
 @media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-indicators{gap:12px}.workspace-view[data-workspace="radios"] .radio-indicator{min-width:125px}}
+
+
+/* Dashboard: one card for independent USB transport and radio status. */
+.dashboard-connection-status{display:flex;flex-direction:column;gap:9px;min-width:0}
+.dashboard-connection-line{display:flex;align-items:center;gap:7px;min-width:0;font-size:.84rem}
+.dashboard-connection-line>span:nth-child(2){color:#aebfae;font-size:.8rem}
+.dashboard-connection-line strong{font-size:.86rem;overflow-wrap:anywhere}
+.dashboard-connection-dot{width:9px;height:9px;flex:none;border-radius:50%;background:#7b857b}
+.dashboard-connection-dot[data-state="connected"]{background:#54c67a}
+.dashboard-connection-dot[data-state="pending"]{background:#e7b956}
+.dashboard-connection-dot[data-state="simulation"]{background:#68aef1}
