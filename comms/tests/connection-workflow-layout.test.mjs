@@ -115,3 +115,22 @@ test('compact Channel Editor keeps radio actions centered and file actions after
  assert.ok(editor.indexOf('id="backup"')<editor.indexOf('id="restore"'));
  assert.ok(app.includes('simulatorRead.onclick=async()=>'));
 });
+
+test('programming actions use prominent distinct colours while preserving disabled hardware controls',()=>{
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ for(const fragment of ['#simulator-read{background:#17633f','#simulator-read:disabled{background:#17402c','#radio-write-placeholder:disabled{background:#483d19','#radio-verify-write-placeholder:disabled{background:#263547','font-weight:800','min-height:52px']){
+  assert.ok(css.includes(fragment),fragment);
+ }
+ for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+ }
+ assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+});
+test('USB and Radio diagnostics retain collapsible controls and brighter gold summaries',()=>{
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(css.includes('>.usb-diagnostics-panel>summary{color:#ffd477'));
+ assert.ok(css.includes('font-size:1.05rem;font-weight:800'));
+ for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
+  assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
+ }
+});
