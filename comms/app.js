@@ -1,6 +1,8 @@
 import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sdr.js';
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
+import {NativeRadioDriver} from './native-driver.js';
+import {VirtualRadio} from './virtual-radio.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
 import {MODELS,readModel,channelKey,modelStorage,migrateLegacyChannels} from './models.js';
@@ -22,6 +24,18 @@ document.addEventListener('squawk-add-receive-only-channel',event=>{
  try{const candidate=normaliseChannel({...event.detail,receiveOnly:true});channels.push(candidate);render();alert('Receive-only reference added to Channel Editor.');}
  catch(error){alert('Unable to add channel: '+error.message);}
 });
+let virtualRadio=null;
+let virtualDriver=null;
+const simulatorIdentity=document.createElement('p');
+simulatorIdentity.id='simulator-identity';
+simulatorIdentity.textContent='Virtual radio not connected.';
+const simulatorRead=document.createElement('button');
+simulatorRead.type='button';simulatorRead.id='simulator-read';
+simulatorRead.textContent='Read virtual radio';simulatorRead.disabled=true;
+const simulatorPanel=document.createElement('div');
+simulatorPanel.className='actions';
+simulatorPanel.append(simulatorRead);
+$('diagnostic-log').before(simulatorIdentity,simulatorPanel);
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
   const entry=document.createElement('li');
@@ -33,6 +47,7 @@ const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
     const busy=state==='connecting'||state==='disconnecting';
+    simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     $('connect').disabled=busy||state==='connected';
     $('simulate').disabled=busy||state==='connected';
     $('disconnect').disabled=busy||state==='disconnected';
@@ -48,8 +63,28 @@ const connectionManager=new ConnectionManager({
   onLog:addDiagnostic
 });
 $('connect').onclick=async()=>{try{await connectionManager.connectUSB();}catch(e){alert('Connection failed: '+e.message);}};
-$('simulate').onclick=()=>{try{connectionManager.connectSimulator();}catch(e){alert(e.message);}};
-$('disconnect').onclick=async()=>{try{await connectionManager.disconnect();}catch(e){alert('Disconnect failed: '+e.message);}};
+$('simulate').onclick=async()=>{try{
+  connectionManager.connectSimulator();
+  virtualRadio=new VirtualRadio({model});
+  virtualDriver=new NativeRadioDriver({transport:virtualRadio,model});
+  const identity=await virtualDriver.identify();
+  simulatorIdentity.textContent='Virtual radio: '+identity.model+' · '+identity.firmware+' (simulated, not physical hardware)';
+  addDiagnostic('Virtual radio identified: '+identity.model+' (simulated)');
+}catch(e){virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio unavailable.';addDiagnostic('Simulator error: '+e.message);try{if(connectionManager.mode==='simulation')await connectionManager.disconnect();}catch{}alert(e.message);}};
+simulatorRead.onclick=async()=>{
+  if(connectionManager.mode!=='simulation'||!virtualDriver)return;
+  simulatorRead.disabled=true;
+  try{
+    const memory=await virtualDriver.readMemory();
+    const incoming=memory.channels.map(normaliseChannel);
+    if(incoming.length>1000)throw Error('Maximum 1000 channels');
+    if(confirm('Load '+incoming.length+' SIMULATED channels into the editor? This replaces the current local channel list.')){
+      channels=incoming;render();addDiagnostic('Loaded '+incoming.length+' simulated channels into the editor');
+    }else addDiagnostic('Simulated memory read cancelled by user');
+  }catch(e){addDiagnostic('Virtual memory read failed: '+e.message);alert(e.message);}
+  finally{simulatorRead.disabled=connectionManager.mode!=='simulation'||connectionManager.state!=='connected';}
+};
+$('disconnect').onclick=async()=>{try{await connectionManager.disconnect();virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;simulatorIdentity.textContent='Virtual radio not connected.';}catch(e){alert('Disconnect failed: '+e.message);}};
 connectionManager.setState('disconnected');
 addDiagnostic('Diagnostics ready. No radio read/write commands are available.');
 
@@ -154,6 +189,11 @@ function displayModel(){
   // Model selection changes the workspace, not the physical USB connection.
 }
 selector.addEventListener('change',()=>{
+  if(connectionManager.state!=='disconnected'){
+    selector.value=model;
+    alert('Disconnect before changing radio model.');
+    return;
+  }
   model=selector.value;
   localStorage.setItem('squawk-selected-model-v1',model);
   key=channelKey(model);
