@@ -46,3 +46,21 @@ test('USB connection test is a single static control with a safe handler',()=>{
  assert.ok(app.includes('connectionManager.testUSBConnection()'));
  assert.ok(app.includes('usbDiagnosticsPanel.open=true'));
 });
+
+test('V3 future hardware actions are unique disabled static placeholders',()=>{
+ for(const id of ['usb-disconnect-placeholder','radio-read-identity-placeholder','radio-verify-placeholder','radio-read-placeholder','radio-write-placeholder','radio-verify-write-placeholder','radio-backup-placeholder','radio-restore-placeholder']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+  assert.ok(!app.includes("$('"+id+"')"),id+' must not have a hardware handler');
+ }
+});
+test('V3 keeps existing working controls and avoids duplicate physical actions',()=>{
+ for(const id of ['connect','usb-test','simulate','simulator-read','radio-settings-open','disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ assert.ok(html.includes('class="radio-programming-grid"'));
+ assert.ok(!html.includes('Read radio (unavailable)'));
+ assert.ok(!html.includes('Write radio (unavailable)'));
+ assert.ok(app.includes("$('disconnect').onclick"));
+ assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+});
