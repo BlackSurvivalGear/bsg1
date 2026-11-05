@@ -305,3 +305,12 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .usb-diagnostics-panel::-webkit-scrollbar-thumb,.workspace-view[data-workspace="radios"] .usb-diagnostics-info::-webkit-scrollbar-thumb{background:#405444;border-radius:8px}
 .workspace-view[data-workspace="radios"] #usb-diagnostics-feedback{display:block;color:#a8c7aa;font-size:.8rem;margin-top:8px}
 @media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-controls{grid-template-columns:1fr}.workspace-view[data-workspace="radios"] > .status.radio-console{padding:18px 12px}}
+
+
+/* Compact the verified static console without moving controls in JavaScript. */
+.workspace-view[data-workspace="radios"] > .status.radio-console{gap:12px;padding:22px 20px}
+.workspace-view[data-workspace="radios"] .radio-console-head{gap:9px}
+.workspace-view[data-workspace="radios"] .radio-connection-controls{gap:12px}
+.workspace-view[data-workspace="radios"] .radio-control-column{gap:9px;padding:13px}
+.workspace-view[data-workspace="radios"] .radio-console-messages{gap:5px}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] > .status.radio-console{padding:16px 12px}}

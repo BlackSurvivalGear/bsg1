@@ -21,3 +21,10 @@ test('radio connection and channel editing remain separate',()=>{
  assert.ok(html.includes('id="profiles"'));
  assert.ok(app.includes("const simulatorRead=$('simulator-read')"));
 });
+
+
+test('connection messages precede the collapsible diagnostics panel',()=>{
+ const messages=html.indexOf('class="radio-console-messages"');
+ const diagnostics=html.indexOf('id="usb-diagnostics-panel"');
+ assert.ok(messages>=0 && diagnostics>messages);
+});
