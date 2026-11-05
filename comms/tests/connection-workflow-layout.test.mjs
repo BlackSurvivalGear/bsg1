@@ -28,3 +28,14 @@ test('connection messages precede the collapsible diagnostics panel',()=>{
  const diagnostics=html.indexOf('id="usb-diagnostics-panel"');
  assert.ok(messages>=0 && diagnostics>messages);
 });
+
+
+test('paired diagnostic panels have unique static IDs and independent actions',()=>{
+ for(const id of ['radio-diagnostics-panel','radio-diagnostics-info','radio-refresh','radio-clear','radio-copy','radio-diagnostics-feedback']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ for(const fragment of ["$('radio-refresh').onclick","$('radio-clear').onclick","$('radio-copy').onclick","radioEvents.length=0"]){
+  assert.ok(app.includes(fragment),fragment);
+ }
+ assert.ok(!app.includes('connectionActions.replaceChildren'));
+});

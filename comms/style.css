@@ -314,3 +314,19 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-control-column{gap:9px;padding:13px}
 .workspace-view[data-workspace="radios"] .radio-console-messages{gap:5px}
 @media(max-width:560px){.workspace-view[data-workspace="radios"] > .status.radio-console{padding:16px 12px}}
+
+
+/* Independent collapsed USB and Radio Diagnostics panels. */
+.workspace-view[data-workspace="radios"] .connection-diagnostics-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+ width:min(100%,740px);align-items:start;
+}
+.workspace-view[data-workspace="radios"] .connection-diagnostics-grid .usb-diagnostics-panel{
+ width:100%;min-width:0;max-height:320px;box-sizing:border-box;
+}
+.workspace-view[data-workspace="radios"] #radio-diagnostics-feedback{
+ display:block;color:#a8c7aa;font-size:.8rem;margin-top:8px;
+}
+@media(max-width:650px){
+ .workspace-view[data-workspace="radios"] .connection-diagnostics-grid{grid-template-columns:1fr}
+}
