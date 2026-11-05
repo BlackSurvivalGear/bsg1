@@ -3,6 +3,7 @@ import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
+import {validateVirtualMemory} from './virtual-memory-validation.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
 import {MODELS,readModel,channelKey,modelStorage,migrateLegacyChannels} from './models.js';
@@ -76,7 +77,7 @@ simulatorRead.onclick=async()=>{
   simulatorRead.disabled=true;
   try{
     const memory=await virtualDriver.readMemory();
-    const incoming=memory.channels.map(normaliseChannel);
+    const incoming=validateVirtualMemory(memory,model).channels;
     if(incoming.length>1000)throw Error('Maximum 1000 channels');
     if(confirm('Load '+incoming.length+' SIMULATED channels into the editor? This replaces the current local channel list.')){
       channels=incoming;render();addDiagnostic('Loaded '+incoming.length+' simulated channels into the editor');
