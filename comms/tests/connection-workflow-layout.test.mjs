@@ -39,3 +39,10 @@ test('paired diagnostic panels have unique static IDs and independent actions',(
  }
  assert.ok(!app.includes('connectionActions.replaceChildren'));
 });
+
+test('USB connection test is a single static control with a safe handler',()=>{
+ assert.equal((html.match(/id="usb-test"/g)||[]).length,1);
+ assert.ok(app.includes("$('usb-test').onclick=async()=>"));
+ assert.ok(app.includes('connectionManager.testUSBConnection()'));
+ assert.ok(app.includes('usbDiagnosticsPanel.open=true'));
+});
