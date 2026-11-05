@@ -33,10 +33,9 @@ simulatorIdentity.textContent='Virtual radio not connected.';
 const simulatorRead=document.createElement('button');
 simulatorRead.type='button';simulatorRead.id='simulator-read';
 simulatorRead.textContent='Read virtual radio';simulatorRead.disabled=true;
-const simulatorPanel=document.createElement('div');
-simulatorPanel.className='actions';
-simulatorPanel.append(simulatorRead);
-$('diagnostic-log').before(simulatorIdentity,simulatorPanel);
+// My Radios is visible in the tabbed shell; diagnostics may be hidden.
+$('simulate').after(simulatorRead);
+$('connection').after(simulatorIdentity);
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
   const entry=document.createElement('li');
