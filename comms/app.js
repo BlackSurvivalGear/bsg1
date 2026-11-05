@@ -1,6 +1,7 @@
 import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sdr.js';
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
+import {radioConnectionIndicators} from './radio-connection-indicators.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
 import {runFamilyMockRead} from './uv5r-family-mock.js';
@@ -47,6 +48,27 @@ selectionRow.className='radio-selection-row';
 selectionRow.append(document.querySelector('label[for="radio-model"]'),$('radio-model'),identityPreview);
 $('model-name').after(selectionRow);
 $('connection').after(simulatorIdentity);
+const indicatorRow=document.createElement('div');
+indicatorRow.className='radio-connection-indicators';
+indicatorRow.setAttribute('aria-label','USB and radio connection status');
+function indicator(label,id){
+ const item=document.createElement('div');item.className='radio-indicator';
+ const title=document.createElement('span');title.className='radio-indicator-title';title.textContent=label;
+ const detail=document.createElement('span');detail.className='radio-indicator-detail';
+ const dot=document.createElement('span');dot.className='radio-indicator-dot';dot.setAttribute('aria-hidden','true');
+ const value=document.createElement('span');value.id=id;
+ detail.append(dot,value);item.append(title,detail);indicatorRow.append(item);return item;
+}
+const usbIndicator=indicator('USB Connection','usb-indicator-status');
+const radioIndicator=indicator('Radio Connection','radio-indicator-status');
+selectionRow.after(indicatorRow);
+function updateConnectionIndicators(snapshot){
+ const status=radioConnectionIndicators(snapshot);
+ for(const [element,value] of [[usbIndicator,status.usb],[radioIndicator,status.radio]]){
+  element.dataset.state=value.state;
+  element.querySelector('.radio-indicator-detail span:last-child').textContent=value.label;
+ }
+}
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
   const entry=document.createElement('li');
@@ -57,6 +79,7 @@ function addDiagnostic(message){
 const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
+    updateConnectionIndicators({state,mode});
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     identityPreview.disabled=busy||state==='connected';
