@@ -371,3 +371,21 @@ main{max-width:none;padding:0;margin:0}
  .workspace-view[data-workspace="radios"] .radio-action-pair{gap:6px}
  .workspace-view[data-workspace="radios"] .radio-action-pair button{font-size:.75rem;padding:9px 5px}
 }
+
+/* Unified Radio Memory and Channel Editor: static markup, no duplicated controls. */
+.workspace-view[data-workspace="radios"] .radio-editor-card{padding:18px;background:linear-gradient(120deg,#192a1b,#111912);border:1px solid #39523a;border-radius:14px}
+.workspace-view[data-workspace="radios"] .radio-editor-card .radio-programming-panel{width:100%;max-width:none;margin:0 0 18px}
+.workspace-view[data-workspace="radios"] .radio-editor-card .radio-memory-groups{align-items:stretch}
+.workspace-view[data-workspace="radios"] .radio-editor-card .radio-memory-group{min-height:156px}
+.workspace-view[data-workspace="radios"] .radio-editor-card .radio-memory-group>button{min-height:42px}
+.workspace-view[data-workspace="radios"] .radio-editor-heading{margin:0 0 12px}
+.workspace-view[data-workspace="radios"] .radio-editor-heading .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.workspace-view[data-workspace="radios"] .radio-editor-heading .toolbar .actions{margin:0}
+.workspace-view[data-workspace="radios"] .radio-editor-heading #add{padding:8px 12px;font-size:.82rem}
+.workspace-view[data-workspace="radios"] .radio-editor-description{margin:0 0 12px}
+.workspace-view[data-workspace="radios"] .radio-editor-file-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;justify-content:flex-start}
+.workspace-view[data-workspace="radios"] .radio-editor-file-actions button{padding:7px 10px;font-size:.75rem;white-space:nowrap}
+.workspace-view[data-workspace="radios"] .radio-connection-controls{align-items:stretch}
+.workspace-view[data-workspace="radios"] .radio-connection-stack .radio-control-column{flex:1}
+.workspace-view[data-workspace="radios"] .radio-control-column>button,.workspace-view[data-workspace="radios"] .radio-control-column .radio-action-pair button{min-height:42px}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-editor-card{padding:12px}.workspace-view[data-workspace="radios"] .radio-editor-card .radio-memory-group{min-height:0}}
