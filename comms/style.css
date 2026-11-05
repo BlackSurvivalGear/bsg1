@@ -423,3 +423,11 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:hover{color:#e2e9df;background:#1b2c20}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:focus-visible{outline:2px solid #b5c6b3;outline-offset:-2px}
 @media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-stack{grid-template-rows:auto auto;height:auto}}
+
+
+/* Each diagnostics disclosure expands only its own column; no shared-row stretching. */
+.workspace-view[data-workspace="radios"] .radio-connection-controls{align-items:start}
+.workspace-view[data-workspace="radios"] .radio-connection-stack{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;align-self:start;height:auto;gap:9px}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.radio-control-column{flex:none;height:auto;min-height:230px;box-sizing:border-box}
+.workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel{flex:none;align-self:stretch;height:auto;min-height:0;max-height:320px;overflow:auto}
+@media(max-width:560px){.workspace-view[data-workspace="radios"] .radio-connection-stack>.radio-control-column{min-height:0}}
