@@ -31,38 +31,11 @@ document.addEventListener('squawk-add-receive-only-channel',event=>{
 });
 let virtualRadio=null;
 let virtualDriver=null;
-const simulatorIdentity=document.createElement('p');
-simulatorIdentity.id='simulator-identity';
-simulatorIdentity.textContent='Virtual radio not connected.';
-const identityPreview=document.createElement('button');
-identityPreview.type='button';identityPreview.id='bff8hp-identification-preview';
-identityPreview.textContent='Identify Radio';
-identityPreview.title='Offline demonstration only; no USB communication';
-const simulatorRead=document.createElement('button');
-simulatorRead.type='button';simulatorRead.id='simulator-read';
-simulatorRead.textContent='Read virtual radio';simulatorRead.disabled=true;
-// My Radios is visible in the tabbed shell; diagnostics may be hidden.
-$('simulate').after(simulatorRead);
-simulatorRead.after(identityPreview);
-const selectionRow=document.createElement('div');
-selectionRow.className='radio-selection-row';
-selectionRow.append(document.querySelector('label[for="radio-model"]'),$('radio-model'),identityPreview);
-$('model-name').after(selectionRow);
-$('connection').after(simulatorIdentity);
-const indicatorRow=document.createElement('div');
-indicatorRow.className='radio-connection-indicators';
-indicatorRow.setAttribute('aria-label','USB and radio connection status');
-function indicator(label,id){
- const item=document.createElement('div');item.className='radio-indicator';
- const title=document.createElement('span');title.className='radio-indicator-title';title.textContent=label;
- const detail=document.createElement('span');detail.className='radio-indicator-detail';
- const dot=document.createElement('span');dot.className='radio-indicator-dot';dot.setAttribute('aria-hidden','true');
- const value=document.createElement('span');value.id=id;
- detail.append(dot,value);item.append(title,detail);indicatorRow.append(item);return item;
-}
-const usbIndicator=indicator('USB Connection','usb-indicator-status');
-const radioIndicator=indicator('Radio Connection','radio-indicator-status');
-selectionRow.after(indicatorRow);
+const simulatorIdentity=$('simulator-identity');
+const identityPreview=$('bff8hp-identification-preview');
+const simulatorRead=$('simulator-read');
+const usbIndicator=$('usb-indicator');
+const radioIndicator=$('radio-indicator');
 function updateConnectionIndicators(snapshot){
  const status=radioConnectionIndicators(snapshot);
  for(const [element,value] of [[usbIndicator,status.usb],[radioIndicator,status.radio]]){
@@ -70,28 +43,19 @@ function updateConnectionIndicators(snapshot){
   element.querySelector('.radio-indicator-detail span:last-child').textContent=value.label;
  }
 }
-const usbDiagnosticsPanel=document.createElement('details');
-usbDiagnosticsPanel.className='usb-diagnostics-panel';
-const usbDiagnosticsTitle=document.createElement('summary');
-usbDiagnosticsTitle.textContent='USB Diagnostics · Transport only';
-const usbDiagnosticsInfo=document.createElement('pre');
-usbDiagnosticsInfo.className='usb-diagnostics-info';
-usbDiagnosticsInfo.setAttribute('aria-live','polite');
-const usbDiagnosticsActions=document.createElement('div');
-usbDiagnosticsActions.className='actions';
-const usbCopy=document.createElement('button');usbCopy.type='button';usbCopy.textContent='Copy diagnostic log';
-const usbRefresh=document.createElement('button');usbRefresh.type='button';usbRefresh.textContent='Refresh diagnostics';
-usbDiagnosticsActions.append(usbCopy,usbRefresh);
-const usbDiagnosticsNote=document.createElement('p');
-usbDiagnosticsNote.textContent='USB IDs describe the serial adapter, not the radio. No radio commands, memory reads or writes are performed.';
-usbDiagnosticsPanel.append(usbDiagnosticsTitle,usbDiagnosticsInfo,usbDiagnosticsActions,usbDiagnosticsNote);
-document.querySelector('.radio-connection-indicators').after(usbDiagnosticsPanel);
+const usbDiagnosticsPanel=$('usb-diagnostics-panel');
+const usbDiagnosticsInfo=$('usb-diagnostics-info');
+const usbCopy=$('usb-copy');
+const usbRefresh=$('usb-refresh');
+const usbClear=$('usb-clear');
+const usbFeedback=$('usb-diagnostics-feedback');
 function currentUSBReport(){
  return formatDiagnosticExport(usbDiagnosticSummary(connectionManager.snapshot()),
   [...$('diagnostic-log').children].map(item=>item.textContent).reverse());
 }
-function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();}
+function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();usbFeedback.textContent='Snapshot refreshed — '+new Date().toLocaleTimeString();}
 usbRefresh.onclick=refreshUSBDiagnostics;
+usbClear.onclick=()=>{$('diagnostic-log').replaceChildren();refreshUSBDiagnostics();usbFeedback.textContent='Event log cleared';};
 usbDiagnosticsPanel.addEventListener('toggle',()=>{if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();});
 usbCopy.onclick=async()=>{
  try{await navigator.clipboard.writeText(currentUSBReport());usbCopy.textContent='Copied';}
