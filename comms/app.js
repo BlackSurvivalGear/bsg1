@@ -138,6 +138,9 @@ $('usb-test').onclick=async()=>{
   if(connectionManager.state!=='disconnected')return;
   const button=$('usb-test');
   button.disabled=true;
+  $('connect').disabled=true;
+  $('simulate').disabled=true;
+  identityPreview.disabled=true;
   button.textContent='Testing USB…';
   usbDiagnosticsPanel.open=true;
   usbFeedback.textContent='Testing USB serial port. No radio commands will be sent.';
@@ -153,6 +156,9 @@ $('usb-test').onclick=async()=>{
   }finally{
     button.textContent='Test USB Connection';
     button.disabled=connectionManager.state!=='disconnected';
+    $('connect').disabled=connectionManager.state!=='disconnected';
+    $('simulate').disabled=connectionManager.state!=='disconnected';
+    identityPreview.disabled=connectionManager.state!=='disconnected';
   }
 };
 $('simulate').onclick=async()=>{try{
