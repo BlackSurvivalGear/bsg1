@@ -4,6 +4,7 @@ import {ConnectionManager} from './connection.js';
 import {NativeRadioDriver} from './native-driver.js';
 import {VirtualRadio} from './virtual-radio.js';
 import {runFamilyMockRead} from './uv5r-family-mock.js';
+import {previewBFF8HPIdentity} from './bff8hp-identification-preview.js';
 import {validateVirtualMemory} from './virtual-memory-validation.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
@@ -31,11 +32,16 @@ let virtualDriver=null;
 const simulatorIdentity=document.createElement('p');
 simulatorIdentity.id='simulator-identity';
 simulatorIdentity.textContent='Virtual radio not connected.';
+const identityPreview=document.createElement('button');
+identityPreview.type='button';identityPreview.id='bff8hp-identification-preview';
+identityPreview.textContent='Preview BF-F8HP identity';
+identityPreview.title='Offline demonstration only; no USB communication';
 const simulatorRead=document.createElement('button');
 simulatorRead.type='button';simulatorRead.id='simulator-read';
 simulatorRead.textContent='Read virtual radio';simulatorRead.disabled=true;
 // My Radios is visible in the tabbed shell; diagnostics may be hidden.
 $('simulate').after(simulatorRead);
+simulatorRead.after(identityPreview);
 $('connection').after(simulatorIdentity);
 const diagnostics=$('diagnostic-log');
 function addDiagnostic(message){
@@ -49,6 +55,7 @@ const connectionManager=new ConnectionManager({
   onChange:({state,mode,info,baudRate})=>{
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
+    identityPreview.disabled=busy||state==='connected'||model!=='bf-f8hp';
     $('connect').disabled=busy||state==='connected';
     $('simulate').disabled=busy||state==='connected';
     $('disconnect').disabled=busy||state==='disconnected';
@@ -63,6 +70,17 @@ const connectionManager=new ConnectionManager({
   },
   onLog:addDiagnostic
 });
+identityPreview.onclick=async()=>{
+  if(model!=='bf-f8hp'||connectionManager.state!=='disconnected')return;
+  if(!confirm('Run a SYNTHETIC BF-F8HP identity preview? No USB port or physical radio will be accessed.'))return;
+  identityPreview.disabled=true;
+  try{
+    const result=await previewBFF8HPIdentity({consent:true});
+    simulatorIdentity.textContent='BF-F8HP identity preview: '+result.identityHex+' · SYNTHETIC · model unconfirmed · no USB used';
+    addDiagnostic('BF-F8HP offline identity preview completed; synthetic, model unconfirmed, no USB commands');
+  }catch(error){addDiagnostic('BF-F8HP preview failed: '+error.message);alert(error.message);}
+  finally{identityPreview.disabled=connectionManager.state!=='disconnected'||model!=='bf-f8hp';}
+};
 $('connect').onclick=async()=>{try{await connectionManager.connectUSB();}catch(e){alert('Connection failed: '+e.message);}};
 $('simulate').onclick=async()=>{try{
   connectionManager.connectSimulator();
@@ -198,6 +216,8 @@ selector.addEventListener('change',()=>{
     return;
   }
   model=selector.value;
+  identityPreview.disabled=model!=='bf-f8hp';
+  simulatorIdentity.textContent='Virtual radio not connected.';
   localStorage.setItem('squawk-selected-model-v1',model);
   key=channelKey(model);
   channels=readChannels();
@@ -207,6 +227,7 @@ selector.addEventListener('change',()=>{
   render();
 });
 displayModel();
+identityPreview.disabled=model!=='bf-f8hp';
 refreshProfiles();
 render();
 
