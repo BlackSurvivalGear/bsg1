@@ -23,15 +23,14 @@ test('radio connection and channel editing remain separate',()=>{
 });
 
 
-test('connection diagnostics are placed beneath their respective controls',()=>{
+test('connection diagnostics remain beneath their respective controls',()=>{
  const usb=html.indexOf('id="usb-indicator"');
  const usbDiag=html.indexOf('id="usb-diagnostics-panel"');
  const radio=html.indexOf('id="radio-indicator"');
  const radioDiag=html.indexOf('id="radio-diagnostics-panel"');
- const memory=html.indexOf('class="radio-programming-panel"');
- assert.ok(usb<usbDiag && usbDiag<radio && radio<radioDiag && radioDiag<memory);
+ const editor=html.indexOf('class="radio-editor-card"');
+ assert.ok(usb<usbDiag && usbDiag<radio && radio<radioDiag && radioDiag<editor);
 });
-
 
 test('paired diagnostic panels have unique static IDs and independent actions',()=>{
  for(const id of ['radio-diagnostics-panel','radio-diagnostics-info','radio-refresh','radio-clear','radio-copy','radio-diagnostics-feedback']){
@@ -51,7 +50,7 @@ test('USB connection test is a single static control with a safe handler',()=>{
 });
 
 test('V3 future hardware actions are unique disabled static placeholders',()=>{
- for(const id of ['radio-verify-placeholder','radio-read-placeholder','radio-write-placeholder','radio-verify-write-placeholder','radio-backup-placeholder','radio-restore-placeholder']){
+ for(const id of ['radio-verify-placeholder','radio-write-placeholder','radio-verify-write-placeholder']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
   assert.ok(!app.includes("$('"+id+"')"),id+' must not have a hardware handler');
@@ -61,7 +60,7 @@ test('V3 keeps existing working controls and avoids duplicate physical actions',
  for(const id of ['connect','usb-test','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
- assert.ok(html.includes('class="radio-memory-groups"'));
+ assert.ok(html.includes('class="radio-editor-program-actions actions"'));
  assert.ok(!html.includes('Read radio (unavailable)'));
  assert.ok(!html.includes('Write radio (unavailable)'));
  assert.ok(app.includes("$('usb-disconnect').onclick"));
@@ -96,14 +95,21 @@ test('USB and simulator disconnect controls are mode-aware and do not send radio
  assert.ok(!html.includes('id="disconnect"'));
 });
 
-test('final V3 groups controls by connection, memory direction and backup purpose',()=>{
- const usb=html.slice(html.indexOf('id="usb-indicator"'),html.indexOf('id="usb-diagnostics-panel"'));
- assert.match(usb,/id="connect"[\s\S]*class="radio-action-pair"[\s\S]*id="usb-test"[\s\S]*id="usb-disconnect"/);
- const radio=html.slice(html.indexOf('id="radio-indicator"'),html.indexOf('id="radio-diagnostics-panel"'));
- assert.match(radio,/id="simulate"[\s\S]*id="bff8hp-identification-preview"[\s\S]*id="radio-verify-placeholder"[\s\S]*id="radio-settings-open"[\s\S]*id="radio-disconnect"/);
- const memory=html.slice(html.indexOf('class="radio-memory-groups"'),html.indexOf('class="radio-console-messages"'));
- assert.match(memory,/<h4>READ<\/h4>[\s\S]*id="radio-read-placeholder"[\s\S]*id="simulator-read"/);
- assert.match(memory,/<h4>WRITE<\/h4>[\s\S]*id="radio-write-placeholder"[\s\S]*id="radio-verify-write-placeholder"/);
- assert.match(memory, /BACKUP &amp; RECOVERY[\s\S]*id="radio-backup-placeholder"[\s\S]*id="radio-restore-placeholder"/);
- assert.equal((html.match(/id="radio-settings-open"/g)||[]).length,1);
+test('compact Channel Editor keeps radio actions centered and file actions after table',()=>{
+ const editor=html.slice(html.indexOf('class="radio-editor-card"'),html.indexOf('class="sdr-section"'));
+ assert.ok(!editor.includes('Channel List'));
+ assert.ok(!editor.includes('radio-memory-groups'));
+ assert.ok(!html.includes('id="radio-read-placeholder"'));
+ assert.ok(!html.includes('id="radio-backup-placeholder"'));
+ assert.ok(!html.includes('id="radio-restore-placeholder"'));
+ for(const id of ['simulator-read','radio-write-placeholder','radio-verify-write-placeholder','add','import','export','backup','restore']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ assert.match(editor,/class="radio-editor-program-actions actions"[\\s\\S]*id="simulator-read"[\\s\\S]*id="radio-write-placeholder"[\\s\\S]*id="radio-verify-write-placeholder"/);
+ assert.ok(editor.indexOf('id="channels"')<editor.indexOf('id="add"'));
+ assert.ok(editor.indexOf('id="add"')<editor.indexOf('id="import"'));
+ assert.ok(editor.indexOf('id="import"')<editor.indexOf('id="export"'));
+ assert.ok(editor.indexOf('id="export"')<editor.indexOf('id="backup"'));
+ assert.ok(editor.indexOf('id="backup"')<editor.indexOf('id="restore"'));
+ assert.ok(app.includes('simulatorRead.onclick=async()=>'));
 });
