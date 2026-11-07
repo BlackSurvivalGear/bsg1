@@ -32,7 +32,7 @@ const radios=view('radios');
 radios.append(radio,editorCard,profiles);
 view('repeaters').append(repeater);
 view('sdr').append(sdr);
-for(const id of ['frequencies','operations','tools','african-networks','academy']){
+for(const id of ['frequencies','african-networks','operations','tools','academy']){
  const item=WORKSPACES.find(entry=>entry.id===id),panel=view(id);
  if(id==='operations'||id==='tools'||id==='frequencies'||id==='academy'||id==='african-networks'){const mount=document.createElement('div');mount.id=id==='operations'?'range-planner':id==='tools'?'antenna-tools':id==='academy'?'radio-academy':id==='african-networks'?'african-networks':'frequency-explorer';panel.append(mount);continue;}
  const placeholder=document.createElement('div');
