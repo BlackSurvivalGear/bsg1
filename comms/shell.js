@@ -88,7 +88,7 @@ for(const item of WORKSPACES){
  const button=document.createElement('button');button.type='button';button.dataset.target=item.id;button.className='nav-link';
  const text=document.createElement('span');text.textContent=item.title;button.append(text);
  if(!item.ready){const tag=document.createElement('small');tag.textContent='SOON';button.append(tag);}
- button.addEventListener('click',()=>navigate(item.id));nav.append(button);
+ button.addEventListener('click',()=>{if(item.id==='rsn'){window.open('https://www.rsn.ng/','_blank','noopener,noreferrer');closeMenu();return;}navigate(item.id);});nav.append(button);
  if(['repeaters','sdr','frequencies','radios','operations','tools','africandxnet','rsn','academy'].includes(item.id)){
   const card=document.createElement('button');card.type='button';card.className='shortcut-card';
   const name=document.createElement('strong');name.textContent=item.title;
