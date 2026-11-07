@@ -7,7 +7,6 @@ export const WORKSPACES=Object.freeze([
  {id:'african-networks',title:'African Networks',group:'Discover',description:'African amateur radio organisations and communities',ready:true},
  {id:'operations',title:'Operations',group:'Plan',description:'Map and terrain radio range planner',ready:true},
  {id:'tools',title:'Radio Tools',group:'Plan',description:'Antenna and RF power calculators',ready:true},
-
  {id:'academy',title:'Radio Academy',group:'Plan',description:'Offline radio lessons and knowledge checks',ready:true},
  {id:'settings',title:'Settings',group:'System',description:'USB diagnostics and hardware status',ready:true}
 ]);
