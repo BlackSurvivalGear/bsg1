@@ -93,7 +93,7 @@ for(const item of WORKSPACES){
   const card=document.createElement('button');card.type='button';card.className='shortcut-card';
   const name=document.createElement('strong');name.textContent=item.title;
   const description=document.createElement('span');description.textContent=item.description;
-  card.append(name,description);card.onclick=()=>navigate(item.id);shortcuts.append(card);
+  card.append(name,description);card.onclick=()=>{if(item.id==='rsn'){window.open('https://www.rsn.ng/','_blank','noopener,noreferrer');return;}navigate(item.id);};shortcuts.append(card);
  }
 }
 menu.onclick=()=>{const opened=sidebar.classList.toggle('is-open');backdrop.hidden=!opened;menu.setAttribute('aria-expanded',String(opened));};
