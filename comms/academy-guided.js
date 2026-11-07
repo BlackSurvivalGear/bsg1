@@ -13,11 +13,24 @@ function mark(course,id){saved[course.id]??={};saved[course.id][id]=true;persist
 function links(){const p=el('p','academy-sources','Further exam preparation: ');RESOURCES.forEach((r,i)=>{if(i)p.append(document.createTextNode(' · '));const a=el('a','',r.label);a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';p.append(a);});return p;}
 function communityLinks(){
  const section=el('section','academy-communities');
- section.append(el('h3','','African Amateur Radio Communities'),el('p','academy-reading','Connect with African amateur radio communities and discover further learning opportunities.'));
+ section.append(el('h3','','African Amateur Radio Communities'),el('p','academy-reading','Open either community website within Academy. If the website blocks embedding, use the new-tab link.'));
  for(const [name,url] of [['AfricanDXNet','https://africadxnet.com/'],['RSN — Radio Society of Nigeria','https://www.rsn.ng/']]){
-  const link=el('a','academy-community-link',name+' ↗');
-  link.href=url;link.target='_blank';link.rel='noopener noreferrer';
-  section.append(link);
+  const card=el('section','academy-community');
+  const heading=el('h4','',name);
+  const controls=el('div','academy-community-actions');
+  const frame=el('iframe','academy-community-frame');
+  frame.title=name+' website';frame.loading='lazy';frame.referrerPolicy='no-referrer';
+  frame.style.cssText='display:none;width:100%;height:560px;border:1px solid #857348;border-radius:8px;background:#fff';
+  const toggle=button('View within Academy',()=>{
+   const show=frame.style.display==='none';
+   if(show&&!frame.src)frame.src=url;
+   frame.style.display=show?'block':'none';
+   toggle.textContent=show?'Hide embedded website':'View within Academy';
+  });
+  const external=el('a','academy-community-link','Open in new tab ↗');
+  external.href=url;external.target='_blank';external.rel='noopener noreferrer';
+  controls.append(toggle,external);
+  card.append(heading,controls,frame);section.append(card);
  }
  return section;
 }
