@@ -11,6 +11,29 @@ function persist(){try{localStorage.setItem(storageKey,JSON.stringify(saved));}c
 function completed(course,id){return Boolean(saved[course.id]?.[id]);}
 function mark(course,id){saved[course.id]??={};saved[course.id][id]=true;persist();}
 function links(){const p=el('p','academy-sources','Further exam preparation: ');RESOURCES.forEach((r,i)=>{if(i)p.append(document.createTextNode(' · '));const a=el('a','',r.label);a.href=r.url;a.target='_blank';a.rel='noopener noreferrer';p.append(a);});return p;}
+function communityLinks(){
+ const section=el('section','academy-communities');
+ section.append(el('h3','','African Amateur Radio Communities'),el('p','academy-reading','Open either community website within Academy. If the website blocks embedding, use the new-tab link.'));
+ for(const [name,url] of [['AfricanDXNet','https://africadxnet.com/'],['RSN — Radio Society of Nigeria','https://www.rsn.ng/']]){
+  const card=el('section','academy-community');
+  const heading=el('h4','',name);
+  const controls=el('div','academy-community-actions');
+  const frame=el('iframe','academy-community-frame');
+  frame.title=name+' website';frame.loading='lazy';frame.referrerPolicy='no-referrer';
+  frame.style.cssText='display:none;width:100%;height:560px;border:1px solid #857348;border-radius:8px;background:#fff';
+  const toggle=button('View within Academy',()=>{
+   const show=frame.style.display==='none';
+   if(show&&!frame.src)frame.src=url;
+   frame.style.display=show?'block':'none';
+   toggle.textContent=show?'Hide embedded website':'View within Academy';
+  });
+  const external=el('a','academy-community-link','Open in new tab ↗');
+  external.href=url;external.target='_blank';external.rel='noopener noreferrer';
+  controls.append(toggle,external);
+  card.append(heading,controls,frame);section.append(card);
+ }
+ return section;
+}
 function render(){
  root.replaceChildren();root.classList.add('academy-course');
  const course=COURSES[level],lesson=course.lessons[step],done=course.lessons.filter(l=>completed(course,l.id)).length;
@@ -19,7 +42,7 @@ function render(){
  const meta=el('div','academy-course-meta');meta.append(el('p','',course.intro+' '+course.detail),el('p','','Completed '+done+' of '+course.lessons.length+' topics'));const progress=el('progress');progress.max=course.lessons.length;progress.value=done;progress.setAttribute('aria-label','Course completion');meta.append(progress);root.append(meta);
  const nav=el('div','academy-step-nav');course.lessons.forEach((l,i)=>{const b=button((completed(course,l.id)?'✓ ':'')+(i+1)+'. '+l.title,()=>{step=i;stage='lesson';selected=null;checked=false;render();});b.setAttribute('aria-current',i===step?'step':'false');nav.append(b);});root.append(nav);
  const panel=el('section','academy-stage');root.append(panel);
- if(stage==='exam'){renderExam(panel,course);root.append(links());return;}
+ if(stage==='exam'){renderExam(panel,course);root.append(links(),communityLinks());return;}
  panel.append(el('p','academy-step-label',course.title+' · Topic '+(step+1)+' of '+course.lessons.length),el('h3','',lesson.title));
  if(stage==='lesson'){
   panel.append(el('h4','','Learn'),el('p','academy-reading',lesson.overview),el('h4','','Apply it'),el('p','academy-reading',lesson.example));
@@ -31,7 +54,7 @@ function render(){
   else{const check=button('Check answer',()=>{checked=true;if(selected===lesson.question.answer)mark(course,lesson.id);render();});check.disabled=selected===null;panel.append(check);}
  }
  if(stage==='finish'){panel.replaceChildren(el('h3','','Course review'),el('p','academy-reading','You have reached the end of this course. Revisit any topics not yet completed, or try the nine-question revision assessment.'));panel.append(button('Start revision assessment',()=>{stage='exam';examAnswers={};examStarted=Date.now();render();}));}
- const actions=el('div','academy-bottom-actions');if(step>0)actions.append(button('Previous topic',()=>{step--;stage='lesson';selected=null;checked=false;render();}));actions.append(button('Revision assessment',()=>{stage='exam';examAnswers={};examStarted=Date.now();render();}));panel.append(actions);root.append(links());
+ const actions=el('div','academy-bottom-actions');if(step>0)actions.append(button('Previous topic',()=>{step--;stage='lesson';selected=null;checked=false;render();}));actions.append(button('Revision assessment',()=>{stage='exam';examAnswers={};examStarted=Date.now();render();}));panel.append(actions);root.append(links(),communityLinks());
 }
 function renderExam(panel,course){
  const qs=lessonQuestions(course),spec=EXAM_SPECS[course.id];
