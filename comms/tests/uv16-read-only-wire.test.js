@@ -99,3 +99,20 @@ test('physically validated PR #51 session never provides a split identify method
  assert.equal(d.writes.filter(x=>x[0]===0x53).length,35);
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
 });
+
+test('optional raw snapshot reuses existing 35 read blocks and preserves all 128 slots',async()=>{
+ const d=device(),session=new UV16ReadOnlySession({port:d.port});
+ const result=await session.readMemory({captureRaw:true});
+ assert.equal(result.channels.length,6);
+ assert.equal(result.rawSnapshot.memory.bytesHex.length,4096);
+ assert.equal(result.rawSnapshot.auxiliary.length,3);
+ assert.equal(result.rawSnapshot.restorable,false);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,35);
+ assert.equal(d.writes.filter(x=>x.length===4&&x[0]===0x57).length,0);
+ assert.equal(result.rawSnapshot.memory.bytesHex.slice(0,32),[...fromHex(rows[0])].map(x=>x.toString(16).padStart(2,'0')).join(''));
+});
+test('raw capture never returns a partial snapshot after interrupted transfer',async()=>{
+ const d=device({failAt:128});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureRaw:true}),/Simulated missing read block/);
+ assert.equal(d.writes.filter(x=>x[0]===0x57).length,0);
+});
