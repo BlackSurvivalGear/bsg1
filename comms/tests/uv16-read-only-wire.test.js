@@ -110,3 +110,21 @@ test('identity rejects unexpected handshake and sends no memory commands',async(
  await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_IDENTITY'});
  assert.equal(d.writes.some(cmd=>cmd[0]===0x53),false);
 });
+
+test('read reuses identified session and does not issue another magic handshake',async()=>{
+ const d=device(),session=new UV16ReadOnlySession({port:d.port});
+ const identity=await session.identify();
+ assert.equal(identity.firmware,'HN5RV01');
+ const result=await session.readMemory();
+ assert.equal(result.capacity,128);
+ assert.equal(result.channels.length,6);
+ assert.equal(d.writes.filter(x=>x.length===1&&x[0]===0x50).length,1);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,36); // one identify firmware + 3 aux + 32 memories
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+ await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
+});
+test('failed identification closes session and cannot continue into read',async()=>{
+ const d=device({badFirmware:true}),session=new UV16ReadOnlySession({port:d.port});
+ await assert.rejects(session.identify(),{code:'WRONG_FIRMWARE'});
+ await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
+});
