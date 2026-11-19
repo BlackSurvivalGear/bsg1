@@ -135,3 +135,22 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(js.includes('centre.append(read,readHint)'));
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
+
+test('BSG logo is the accessible direct link to central homepage',()=>{
+ assert.ok(!html.includes('class="bsg-home-link"'));
+ assert.ok(!html.includes('← BSG CENTRAL DASHBOARD'));
+ assert.match(html,/<a class="bsg-logo-home" href="https:\/\/blacksurvivalgear\.github\.io\/bsg1\/" aria-label="Return to BSG central homepage"/);
+ assert.match(html,/<a class="bsg-logo-home"[^>]*><img src="\.\.\/BSG%20GOLD%20LOGO\.png"/);
+ const styles=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(styles.includes('header .bsg-logo-home:focus-visible'));
+});
+test('internal Dashboard menu removed; Radio Manager is default and legacy hashes resolve safely',async()=>{
+ const {WORKSPACES,DEFAULT_WORKSPACE,validWorkspace,workspaceFromHash}=await import('../workspace.js');
+ assert.equal(DEFAULT_WORKSPACE,'radios');
+ assert.ok(!WORKSPACES.some(item=>item.id==='dashboard'));
+ assert.equal(WORKSPACES.find(item=>item.id==='radios')?.group,'Workspace');
+ assert.equal(validWorkspace('dashboard'),'radios');
+ assert.equal(workspaceFromHash('#dashboard'),'radios');
+ assert.equal(workspaceFromHash(''),'radios');
+ assert.ok(shell.includes('for(const item of WORKSPACES)'));
+});
