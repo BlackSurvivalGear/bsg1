@@ -81,7 +81,7 @@ if(page&&original&&editor){
    const selected=modelSelector?.value==='uv-16-pro-v2';
    readSummary.hidden=!selected||!text;
    if(readSummary.hidden)return;
-   const lines=text.split('\\n').map(line=>line.trim()).filter(Boolean);
+   const lines=text.split('\n').map(line=>line.trim()).filter(Boolean);
    const success=lines[0]?.startsWith('Read complete');
    const failed=lines[0]?.startsWith('Read failed');
    readSummary.classList.toggle('is-success',success);
@@ -129,7 +129,7 @@ if(page&&original&&editor){
    // Refresh the existing read-only reports using their original handlers.
    $('usb-refresh')?.click();$('radio-refresh')?.click();
    const text=['USB Diagnostics',$('usb-diagnostics-info')?.textContent||'',
-               'Radio Diagnostics',$('radio-diagnostics-info')?.textContent||''].join('\\n\\n');
+               'Radio Diagnostics',$('radio-diagnostics-info')?.textContent||''].join('\n\n');
    try{await navigator.clipboard.writeText(text);copyFeedback.textContent='Copied both diagnostic reports';}
    catch{copyFeedback.textContent='Clipboard unavailable';}
  };
