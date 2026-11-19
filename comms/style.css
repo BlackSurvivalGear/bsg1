@@ -445,3 +445,58 @@ header .bsg-logo-home:focus-visible{outline:2px solid #e6c47b;outline-offset:4px
 .app-sidebar .sidebar-logo-home:focus-visible{outline:2px solid #e6c47b;outline-offset:3px}
 .app-sidebar .sidebar-brand{padding-bottom:18px}
 @media(max-width:700px){.app-sidebar .sidebar-logo-home{width:66px;height:66px}.app-sidebar .sidebar-logo-home img{width:56px;height:56px}}
+
+/* PR #65: BSG crest sits beside the page heading. Navigation collapses to a
+   narrow hover rail on desktop while retaining the existing touch drawer. */
+.workspace-topbar .workspace-home-logo{
+ display:inline-flex;flex:0 0 72px;width:72px;height:72px;
+ align-items:center;justify-content:center;line-height:0;
+ border-radius:8px;text-decoration:none
+}
+.workspace-topbar .workspace-home-logo img{
+ display:block;width:66px;height:66px;object-fit:contain;
+}
+.workspace-topbar .workspace-home-logo:hover{filter:brightness(1.14)}
+.workspace-topbar .workspace-home-logo:focus-visible{
+ outline:2px solid #e6c47b;outline-offset:3px
+}
+.sidebar-rail-toggle{
+ border:1px solid #415c44;background:#182b1c;color:#e6c47b;
+ font-size:1.4rem;width:44px;height:44px;display:inline-flex;
+ align-items:center;justify-content:center;padding:0;border-radius:8px;
+}
+.sidebar-rail-toggle:focus-visible{outline:2px solid #e6c47b;outline-offset:2px}
+@media(min-width:761px){
+ .app-shell{grid-template-columns:72px minmax(0,1fr)}
+ .app-sidebar{
+  position:relative;z-index:12;width:72px;min-height:100%;
+  padding:16px 12px;overflow:hidden;white-space:nowrap;
+  transition:width .18s ease,box-shadow .18s ease;
+ }
+ .app-sidebar .sidebar-rail-toggle{margin:0 0 8px 0}
+ .app-sidebar .sidebar-brand,
+ .app-sidebar .workspace-nav{
+  visibility:hidden;opacity:0;pointer-events:none;
+ }
+ .app-sidebar:is(:hover,:focus-within,.is-pinned){
+  width:238px;box-shadow:10px 5px 24px #0009;
+ }
+ .app-sidebar:is(:hover,:focus-within,.is-pinned) .sidebar-brand,
+ .app-sidebar:is(:hover,:focus-within,.is-pinned) .workspace-nav{
+  visibility:visible;opacity:1;pointer-events:auto;
+  transition:opacity .12s ease .05s;
+ }
+ .app-sidebar .sidebar-brand{padding:10px 0 18px;letter-spacing:.14em}
+ .app-sidebar .workspace-nav{width:100%}
+ .workspace-content{min-width:0}
+}
+@media(max-width:760px){
+ .app-sidebar .sidebar-rail-toggle{display:none}
+ .workspace-topbar .workspace-home-logo{
+  flex-basis:54px;width:54px;height:54px;
+ }
+ .workspace-topbar .workspace-home-logo img{width:52px;height:52px}
+}
+@media(prefers-reduced-motion:reduce){
+ .app-sidebar{transition:none!important}
+}
