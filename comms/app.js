@@ -106,7 +106,7 @@ function clearGuardCapture(){
  guardStatus.textContent='No guard capture. Write and Verify remain disabled.';
 }
 function refreshGuardControls(){
- guardRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ guardRead.disabled=sampleReading||guardReading||hardwareBusy||!!pendingHardwarePlan||!canReadSelectedRadio();
  fullRead.disabled=sampleReading||guardReading||!!pendingHardwarePlan||hardwareBusy||!canReadSelectedRadio();
  refreshWriteControls();
  fullExport.disabled=sampleReading||guardReading||!currentFullMainCapture;
@@ -271,7 +271,7 @@ function canReadSelectedRadio(){
 function refreshReadButton(){
   const selected=MODELS.find(item=>item.id===model);
   radioRead.textContent='Read '+(selected?.name||'Radio').replace(/^Baofeng /,'');
-  radioRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+  radioRead.disabled=sampleReading||guardReading||hardwareBusy||!!pendingHardwarePlan||!canReadSelectedRadio();
   refreshGuardControls();
   radioRead.title=model==='uv-16-pro-v2'
     ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
@@ -391,7 +391,7 @@ $('usb-test').onclick=async()=>{
   }
 };
 radioRead.onclick=async()=>{
-  if(sampleReading||guardReading||!canReadSelectedRadio())return;
+  if(sampleReading||guardReading||hardwareBusy||pendingHardwarePlan||!canReadSelectedRadio())return;
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
   if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   clearReadSnapshot();
@@ -443,7 +443,10 @@ radioRead.onclick=async()=>{
 };
 $('usb-disconnect').onclick=async()=>{
   if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
-  try{await connectionManager.disconnect();clearReadSnapshot();clearGuardCapture();}
+  try{await connectionManager.disconnect();clearReadSnapshot();
+    // Keep exported full-memory baseline across a power cycle for guarded write/verify.
+    guardStatus.textContent=pendingHardwarePlan?'Reconnect the test UV-16 and select Verify Write. Do not repeat the write.':
+      currentFullMainCapture?'Full radio capture retained. Reconnect the SAME test radio to continue programming.':'Connect the test radio and select Read Full Radio.';}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');
