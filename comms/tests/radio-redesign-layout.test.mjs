@@ -50,7 +50,9 @@ test('one primary centre control advances Connect, Identify, Read without duplic
  assert.ok(js.includes("primaryConnect.hidden=connected"));
  assert.ok(js.includes("identifyButton.hidden=!connected||identified"));
  assert.ok(js.includes("read.hidden=!identified"));
- assert.ok(app.includes("new UV16ReadOnlySession({port:connectionManager.port}).identify()"));
+ assert.ok(app.includes("const session=new UV16ReadOnlySession({port:connectionManager.port});"));
+ assert.ok(app.includes("identifiedReadSession=session;"));
+ assert.ok(app.includes("const result=await session.identify();"));
  assert.ok(css.includes(".rm-advanced #connect{display:none!important}"));
 });
 test('radio image is fully contained with white-background blending and secondary write controls',()=>{
