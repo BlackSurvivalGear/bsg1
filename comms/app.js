@@ -2,6 +2,7 @@ import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sd
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
+import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
@@ -21,6 +22,20 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 $('add').onclick=()=>{if(channels.length>=1000)return alert('Maximum 1000 channels');channels.push(normaliseChannel({name:'NEW',rx:'145.500',tx:'145.500',mode:'FM',notes:''}));render();};
 $('export').onclick=()=>download('bsg-comms-channels.csv',toCSV(channels),'text/csv');
 $('backup').onclick=()=>download('bsg-comms-backup.json',JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
+const writePreparationButton=$('prepare-uv16-write');
+const writePreparationResult=$('uv16-write-preparation-result');
+writePreparationButton.onclick=()=>{
+ // This is a local assessment only: it must never use the USB port or issue a write.
+ const plan=prepareUV16WritePlan({model,channels});
+ writePreparationResult.hidden=false;
+ writePreparationResult.textContent=formatUV16WritePlan(plan);
+ if(model==='uv-16-pro-v2'){
+  // Download a JSON backup of *editor channels*, not a purported radio memory clone.
+  download('bsg-comms-uv16-editor-before-write.json',
+   JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
+ }
+};
+
 let importType='csv';$('chirp-import').onclick=()=>{importType='chirp';$('file').accept='.csv,text/csv';$('file').click();};$('import').onclick=()=>{importType='csv';$('file').accept='.csv';$('file').click();};$('restore').onclick=()=>{importType='json';$('file').accept='.json';$('file').click();};
 $('file').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const incoming=importType==='csv'?parseCSV(await file.text()):importType==='chirp'?parseChirpCSV(await file.text()):parseBackup(await file.text());if(incoming.length>1000)throw Error('Maximum 1000 channels');if(confirm((importType==='chirp'?'Import '+incoming.length+' CHIRP memories as RECEIVE-ONLY channels? This replaces the current local editor list but does not write to the radio.':'Replace the current channel list with '+incoming.length+' imported channels?'))){channels=incoming;render();}}catch(e){alert('Import failed: '+e.message);}event.target.value='';};
 document.addEventListener('squawk-add-receive-only-channel',event=>{
