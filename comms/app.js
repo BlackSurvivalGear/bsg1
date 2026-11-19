@@ -51,7 +51,7 @@ function refreshReadButton(){
   radioRead.textContent='Read '+(selected?.name||'Radio').replace(/^Baofeng /,'');
   radioRead.disabled=sampleReading||!canReadSelectedRadio();
   radioRead.title=model==='uv-16-pro-v2'
-    ?'Read six UV-16 USB sample frequencies; preview and confirm adding only missing rows'
+    ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
     :'USB memory reading is not yet implemented for this model; simulation is separate';
 }
 const usbIndicator=$('usb-indicator');
@@ -213,34 +213,38 @@ radioRead.onclick=async()=>{
     return;
   }
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
-  if(!confirm('EXPERIMENTAL UV-16 USB READ: Read six sample memory frequencies from the connected physical radio? No radio programming occurs. Requires existing CHIRP backup.'))return;
+  if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   sampleReading=true;refreshReadButton();
   $('usb-disconnect').disabled=true;
-  samplePreview.textContent='Reading six sample memories from USB…';
+  samplePreview.textContent='Reading UV-16 Pro V2 — connecting…';
   try{
-    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true});
+    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+      onProgress:({blocksRead,totalBlocks})=>{samplePreview.textContent='Reading UV-16 Pro V2… '+Math.round(100*blocksRead/totalBlocks)+'%';}});
     samplePreview.textContent=formatUV16Sample(result);
-    addDiagnostic('UV-16 sample read returned six frequency pairs; other channel settings remain unverified');
-    logRadioEvent('Experimental UV-16 USB frequency read completed; local editor unchanged');
+    addDiagnostic('UV-16 memory read complete: '+result.channels.length+' programmed frequencies found');
+    logRadioEvent('UV-16 USB memory read complete: '+result.channels.length+' programmed channels');
     const additions=sampleToEditorRows(result);
     const updated=appendSampleRows(channels,additions);
     const missing=updated.length-channels.length;
     if(missing===0){
-      samplePreview.textContent+='\\nAll six sampled memories already exist in Channel Editor. No duplicates added.';
-      addDiagnostic('UV-16 read found no new sample rows; skipped import');
+      samplePreview.textContent+='\nAll '+result.channels.length+' retrieved channels already exist in Channel Editor. No duplicates added.';
+      addDiagnostic('UV-16 read found no new rows; editor preserved');
       return;
     }
-    if(!confirm('Add '+missing+' NEW receive-only sample rows to Channel Editor? '+(additions.length-missing)+' already present will be skipped. Existing '+channels.length+' rows remain unchanged. A JSON backup will download before import. Mode, tones and power were NOT read.'))return;
-    const backup=JSON.stringify({format:'squawk-channels-v1',channels},null,2);
-    download('bsg-comms-before-uv16-import.json',backup,'application/json');
+    // The initial Read confirmation authorises frequency-only import of missing rows.
+    // Never replace or edit existing user channels.
+    if(channels.length){
+      const backup=JSON.stringify({format:'squawk-channels-v1',channels},null,2);
+      download('bsg-comms-before-uv16-import.json',backup,'application/json');
+    }
     channels=updated;render();
-    samplePreview.textContent+='\\nAdded '+missing+' new receive-only sample rows to Channel Editor. Verify mode and settings separately.';
-    addDiagnostic('Added '+missing+' UV-16 frequency-only rows; duplicates skipped; pre-import JSON backup download started');
-    logRadioEvent('Imported '+missing+' new USB-read frequency-only local rows; no radio write');
+    samplePreview.textContent+='\n'+missing+' channels added to Channel Editor. Existing channels preserved.';
+    addDiagnostic('Loaded '+missing+' new UV-16 frequency rows; '+(result.channels.length-missing)+' duplicates skipped; previous editor backed up when nonempty');
+    logRadioEvent('Added '+missing+' new UV-16 channel rows; no radio changes made');
   }catch(error){
-    samplePreview.textContent='UV-16 USB read/import failed: '+error.message+'. If the read failed, disconnect/reconnect before retrying.';
-    addDiagnostic('UV-16 USB read/import failed: '+error.message);
-    logRadioEvent('Experimental UV-16 read/import failed: '+error.message);
+    samplePreview.textContent='Read failed — '+(error.code==='TIMEOUT'?'radio did not respond':error.message)+'. No channel changes made. Reconnect USB before another attempt.';
+    addDiagnostic('UV-16 memory read failed: '+error.message);
+    logRadioEvent('UV-16 read failed: '+error.message);
   }finally{
     sampleReading=false;refreshReadButton();
     $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';

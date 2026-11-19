@@ -12,7 +12,7 @@ const rows=[
 '00 25 03 45 00 25 03 45 00 00 00 00 00 00 00 44',
 'ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff'
 ];
-function device({badHeader=false,badFirmware=false,badIdentity=false}={}){
+function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,extraSlot=-1}={}){
  const chunks=[];let writes=[];let magic=0;let idAck=false;
  const queue=arr=>chunks.push(Uint8Array.from(arr));
  const port={
@@ -25,8 +25,10 @@ function device({badHeader=false,badFirmware=false,badIdentity=false}={}){
    if(data.length===4&&data[0]===0x53){
     const addr=data[1]*256+data[2],body=new Uint8Array(64).fill(255);
     if(addr===0x1ec0)body.set([...Buffer.from(badFirmware?'UNKNOWN':'HN5RV01')].slice(0,7),48);
+    if(addr===failAt)throw Error('Simulated missing read block');
     if(addr===0)for(let i=0;i<4;i++)body.set(fromHex(rows[i]),i*16);
     if(addr===64)for(let i=0;i<4;i++)body.set(fromHex(rows[i+4]),i*16);
+    if(extraSlot>=8&&addr===Math.floor(extraSlot/4)*64)body.set(fromHex(rows[0]),(extraSlot%4)*16);
     queue([6,badHeader?0x59:0x58,data[1],data[2],64,...body]);return;
    }
    if(data.length===1&&data[0]===6)return;
@@ -35,34 +37,51 @@ function device({badHeader=false,badFirmware=false,badIdentity=false}={}){
  };
  return {port,writes};
 }
-test('replays captured wire sequence and decodes the six memories',async()=>{
+test('reads all 128 memory slots and returns exactly six populated channels',async()=>{
  const d=device(),session=new UV16ReadOnlySession({port:d.port});
- const result=await session.readSample();
+ const result=await session.readMemory();
  assert.deepEqual(result.channels.map(c=>c.rx),[140.125,145.225,150.325,440.125,445.225,450.325]);
  assert.deepEqual(result.channels.map(c=>c.tx),result.channels.map(c=>c.rx));
  assert.equal(result.hardwareVerified,false);
+ assert.equal(result.capacity,128);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,35);
+ assert.equal(d.writes.some(x=>x[0]===0x53&&x[1]===0x07&&x[2]===0xc0),true);
  assert.equal(d.writes.some(x=>x.includes(0x57)),false);
 });
 test('reject corrupt frame',async()=>{
- await assert.rejects(new UV16ReadOnlySession({port:device({badHeader:true}).port}).readSample(),{code:'BAD_FRAME'});
+ await assert.rejects(new UV16ReadOnlySession({port:device({badHeader:true}).port}).readMemory(),{code:'BAD_FRAME'});
 });
 test('reject unknown firmware',async()=>{
- await assert.rejects(new UV16ReadOnlySession({port:device({badFirmware:true}).port}).readSample(),{code:'WRONG_FIRMWARE'});
+ await assert.rejects(new UV16ReadOnlySession({port:device({badFirmware:true}).port}).readMemory(),{code:'WRONG_FIRMWARE'});
 });
 test('reject wrong identity before memory requests',async()=>{
  const d=device({badIdentity:true});
- await assert.rejects(new UV16ReadOnlySession({port:d.port}).readSample(),{code:'WRONG_IDENTITY'});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory(),{code:'WRONG_IDENTITY'});
  assert.equal(d.writes.some(x=>x[0]===0x53),false);
 });
 test('cancelled session sends no bytes',async()=>{
  const controller=new AbortController();controller.abort();
  const d=device();
- await assert.rejects(new UV16ReadOnlySession({port:d.port}).readSample({signal:controller.signal}),{code:'ABORTED'});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({signal:controller.signal}),{code:'ABORTED'});
  assert.equal(d.writes.length,0);
 });
 test('session is single-use and cannot write arbitrary commands',async()=>{
  const session=new UV16ReadOnlySession({port:device().port});
  assert.equal('write' in session,false);
- await session.readSample();
- await assert.rejects(session.readSample(),{code:'SESSION_USED'});
+ await session.readMemory();
+ await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
+});
+
+test('finds additional programmed memories beyond the original first eight',async()=>{
+ const d=device({extraSlot:127}),progress=[];
+ const result=await new UV16ReadOnlySession({port:d.port}).readMemory({onProgress:p=>progress.push(p)});
+ assert.equal(result.channels.length,7);
+ assert.equal(result.channels.at(-1).slot,127);
+ assert.equal(progress.length,32);
+ assert.deepEqual(progress.at(-1),{blocksRead:32,totalBlocks:32});
+});
+test('incomplete full-memory transfer rejects without returning partial channels',async()=>{
+ const d=device({failAt:128});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory(),/Simulated missing read block/);
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
 });
