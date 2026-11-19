@@ -80,3 +80,20 @@ test('existing read and independent Identify share verified protocol session',()
  assert.ok(app.includes('clearIdentifiedSession()'));
  assert.ok(app.includes('Power-cycle the radio and reconnect USB before retrying.'));
 });
+
+test('radio image is contained within the hero at desktop and mobile widths',()=>{
+ assert.ok(css.includes('.approved-radio-manager .rm-photo{'));
+ assert.ok(css.includes('height:260px'));
+ assert.ok(css.includes('max-height:260px'));
+ assert.ok(css.includes('overflow:hidden'));
+ assert.ok(css.includes('position:absolute;inset:0'));
+ assert.ok(css.includes('object-fit:contain'));
+ assert.ok(css.includes('height:220px;max-height:220px'));
+});
+test('read errors remain visible with failed address and the status no longer claims simulator',()=>{
+ const workspace=readFileSync(new URL('../workspace.js',import.meta.url),'utf8');
+ assert.ok(app.includes("lastPhysicalProtocol='Read failed: '+error.message"));
+ assert.ok(app.includes("samplePreview.textContent='Read failed — '+error.message"));
+ assert.ok(app.includes('radioIdentified:physicalRadioIdentified'));
+ assert.ok(!workspace.includes('Connect, simulate, manage profiles and edit channels'));
+});

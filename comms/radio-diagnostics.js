@@ -1,12 +1,13 @@
-// Radio-level diagnostics are simulation-only until a verified hardware protocol exists.
-export function radioDiagnosticSummary({state='disconnected',mode=null,model='unknown',identity=null,protocolMock=null}={}){
+// Report physical protocol status separately from basic USB transport.
+export function radioDiagnosticSummary({state='disconnected',mode=null,model='unknown',identity=null,protocolMock=null,protocolStatus='Not verified'}={}){
  const simulated=state==='connected'&&mode==='simulation';
+ const physical=state==='connected'&&mode==='usb'&&identity==='HN5RV01';
  return Object.freeze({
-  connection:simulated?'SIMULATED':state==='connected'&&mode==='usb'?'USB port open; radio not verified':'Not connected',
-  model:simulated?model+' (selected, unverified)':'Not identified',
-  identity:simulated&&identity?identity+' (synthetic)':'Not verified',
-  protocol:simulated&&protocolMock?'Synthetic '+protocolMock+'-byte mock passed':'Not verified',
-  hardware:'No physical radio identification or memory operations performed'
+  connection:simulated?'SIMULATED':physical?'UV-16 read-only identity confirmed':state==='connected'&&mode==='usb'?'USB port open; radio not verified':'Not connected',
+  model:simulated?model+' (selected, unverified)':physical?model:'Not identified',
+  identity:simulated&&identity?identity+' (synthetic)':physical?identity+' (physical read-only)':'Not verified',
+  protocol:simulated&&protocolMock?'Synthetic '+protocolMock+'-byte mock passed':state==='connected'&&mode==='usb'?protocolStatus:'Not verified',
+  hardware:physical?'Firmware checked via bounded physical read-only command; memory read not implied':state==='connected'&&mode==='usb'?'USB port open; successful physical identity not established':'No physical radio operation confirmed'
  });
 }
 export function formatRadioDiagnosticExport(summary,events=[]){

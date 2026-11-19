@@ -21,3 +21,11 @@ test('simulator does not report a USB port',()=>{
  assert.equal(result.state,'disconnected');
  assert.equal(result.vendorId,'Unavailable');
 });
+
+test('verified physical identity and last protocol outcome display in USB diagnostics',()=>{
+ const s=usbDiagnosticSummary({state:'connected',mode:'usb',radioIdentified:true,protocolStatus:'Read failed: Invalid block ACK at 0x1FC0 (expected 0x06, received 0x15)'});
+ assert.match(s.radioIdentity,/HN5RV01/);
+ assert.match(s.protocol,/0x1FC0/);
+ assert.match(formatDiagnosticExport(s),/received 0x15/);
+ assert.equal(usbDiagnosticSummary({state:'disconnected',radioIdentified:true}).radioIdentity,'Not verified');
+});

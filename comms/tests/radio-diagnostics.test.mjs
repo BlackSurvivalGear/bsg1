@@ -13,3 +13,11 @@ test('simulator reports synthetic identity and protocol only',()=>{
  assert.match(s.connection,/SIMULATED/);assert.match(s.identity,/synthetic/);assert.match(s.protocol,/Synthetic 64-byte/);
  assert.match(formatRadioDiagnosticExport(s,['Simulator connected']),/Simulator connected/);
 });
+
+test('physical radio identity and bounded protocol failures are not reported as simulation',()=>{
+ const s=radioDiagnosticSummary({state:'connected',mode:'usb',model:'uv-16-pro-v2',identity:'HN5RV01',protocolStatus:'Read failed: Invalid block ACK at 0x1FC0'});
+ assert.equal(s.model,'uv-16-pro-v2');
+ assert.match(s.identity,/HN5RV01/);
+ assert.match(s.protocol,/0x1FC0/);
+ assert.doesNotMatch(s.hardware,/No physical radio identification/);
+});

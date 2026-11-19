@@ -1,5 +1,5 @@
 // USB diagnostic text is derived from connection state, never serial payloads.
-export function usbDiagnosticSummary({state='disconnected',mode=null,info={},baudRate=null}={}){
+export function usbDiagnosticSummary({state='disconnected',mode=null,info={},baudRate=null,radioIdentified=false,protocolStatus='No radio operation yet'}={}){
  const usb=mode==='usb';
  return Object.freeze({
   state:usb?state:state==='connecting'?'connecting':'disconnected',
@@ -7,8 +7,8 @@ export function usbDiagnosticSummary({state='disconnected',mode=null,info={},bau
   vendorId:usb?(info.vendorId||'Unavailable'):'Unavailable',
   productId:usb?(info.productId||'Unavailable'):'Unavailable',
   baudRate:usb&&Number.isInteger(baudRate)?String(baudRate):'Unavailable',
-  radioIdentity:'Not verified',
-  protocol:'No radio commands sent'
+  radioIdentity:usb&&state==='connected'&&radioIdentified?'HN5RV01 (read-only handshake)':'Not verified',
+  protocol:usb?protocolStatus:'No radio operation yet'
  });
 }
 export function formatDiagnosticExport(summary,entries=[]){
