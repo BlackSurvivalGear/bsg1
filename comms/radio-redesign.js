@@ -86,7 +86,7 @@ if(page&&original&&editor){
   firmware.textContent=identified?'Firmware HN5RV01':'Firmware not yet identified';
   connection.textContent=identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
-  identifyButton.disabled=!connected;
+  identifyButton.disabled=read.disabled;
   identifyButton.textContent=identified?'Identify Again':'Identify Radio';
   for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
