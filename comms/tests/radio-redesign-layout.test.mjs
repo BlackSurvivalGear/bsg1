@@ -45,17 +45,17 @@ test('five-step design renders accessible actual state instead of invented COM p
  assert.ok(css.includes('@media(max-width:700px)'));
 });
 
-test('one primary centre control advances Connect, Identify, Read without duplicate Connect',()=>{
+test('one primary centre control connects and executes combined firmware verification and read',()=>{
  assert.ok(js.includes("primaryConnect.id='rm-primary-connect'"));
  assert.ok(js.includes("toolbar.append(disconnect,write,verify)"));
  assert.ok(!js.includes("toolbar.append(connect,disconnect,write,verify)"));
  assert.ok(js.includes("primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();}"));
  assert.ok(js.includes("primaryConnect.hidden=connected"));
- assert.ok(js.includes("identifyButton.hidden=!connected||identified"));
- assert.ok(js.includes("read.hidden=!identified"));
- assert.ok(app.includes("const session=new UV16ReadOnlySession({port:connectionManager.port});"));
- assert.ok(app.includes("identifiedReadSession=session;"));
- assert.ok(app.includes("const result=await session.identify();"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
+ assert.ok(!app.includes("new UV16ReadOnlySession({port:connectionManager.port})"));
+ assert.ok(!app.includes("identifiedReadSession"));
+ assert.ok(!app.includes("session.identify()"));
  assert.ok(css.includes(".rm-advanced #connect{display:none!important}"));
 });
 test('radio image is fully contained with white-background blending and secondary write controls',()=>{
@@ -76,14 +76,16 @@ test('image background is actually made transparent by one-time alpha flood fill
  assert.ok(cutout.includes("img.dataset.cutoutReady='true'"));
  assert.ok(!cutout.includes('setInterval('));
 });
-test('existing read and independent Identify share verified protocol session',()=>{
+test('restored PR #51 physical read is uninterrupted, firmware identification occurs during reading',()=>{
  const wire=readFileSync(new URL('../uv16-read-only-wire.js',import.meta.url),'utf8');
- assert.ok(wire.includes('if(!this.#identified)await this.#identifyHandshake(signal)'));
- assert.ok(app.includes('identifiedSession:existingSession'));
- assert.ok(app.includes('clearIdentifiedSession()'));
+ assert.ok(wire.includes('for(const address of AUX)'));
+ assert.ok(wire.includes('for(const byte of MAGIC)'));
+ assert.ok(wire.includes("if(firmware!=='HN5RV01')"));
+ assert.ok(!wire.includes('async identify('));
+ assert.ok(!app.includes('identifiedSession:existingSession'));
+ assert.ok(!app.includes("event.target?.id!=='radio-identify'"));
  assert.ok(app.includes('Power-cycle the radio and reconnect USB before retrying.'));
 });
-
 test('radio image is contained within the hero at desktop and mobile widths',()=>{
  assert.ok(css.includes('.approved-radio-manager .rm-photo{'));
  assert.ok(css.includes('height:260px'));
@@ -105,8 +107,8 @@ test('selecting radios refreshes their own image and only UV-16 receives read wo
  assert.ok(js.includes("modelSelector?.addEventListener('change',refreshRadioImage)"));
  assert.ok(js.includes("current.id==='uv-16-pro-v2')prepareUV16Cutout(img)"));
  assert.ok(js.includes("const supportsPhysicalRead=selectedModel?.physicalRead===true"));
- assert.ok(js.includes("identifyButton.hidden=!connected||identified||!supportsPhysicalRead"));
- assert.ok(js.includes("read.hidden=!identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
  assert.ok(js.includes("primaryConnect.disabled=connect.disabled||!supportsPhysicalRead"));
  assert.ok(js.includes("fwValue.textContent=!supportsPhysicalRead?'Unsupported'"));
  const cutout=readFileSync(new URL('../radio-photo-cutout.js',import.meta.url),'utf8');
@@ -119,7 +121,7 @@ test('select-first hero orders radio selection and status before action and phot
  assert.ok(js.includes("status.append(statusLabel,connection,portLine,fwLine)"));
  assert.ok(js.includes("heading.textContent='Select Radio'"));
  assert.ok(js.includes("statusLabel.textContent='Radio Status'"));
- assert.ok(js.includes("title.textContent='Radio Control'"));
+ assert.ok(js.includes("title.textContent=selectedModel?.name||'Radio Control'"));
  assert.ok(!js.includes('modelValue.textContent=title.textContent'));
  assert.ok(css.includes('grid-template-columns:minmax(245px,305px) minmax(300px,1fr) minmax(170px,245px)'));
  assert.ok(css.includes('.rm-status{grid-column:1;grid-row:1'));
@@ -131,7 +133,7 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(css.includes('.rm-photo{grid-column:1;grid-row:3'));
  assert.ok(js.includes("primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();}"));
  assert.ok(js.includes("modelSelector?.addEventListener('change',refreshRadioImage)"));
- assert.ok(js.includes("identifyButton.hidden=!connected||identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
  assert.ok(js.includes('centre.append(read,readHint)'));
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
@@ -153,4 +155,11 @@ test('internal Dashboard menu removed; Radio Manager is default and legacy hashe
  assert.equal(workspaceFromHash('#dashboard'),'radios');
  assert.equal(workspaceFromHash(''),'radios');
  assert.ok(shell.includes('for(const item of WORKSPACES)'));
+});
+
+test('selected radio name is shown over the centre action and radio is not separately identified',()=>{
+ assert.ok(js.includes("title.textContent=selectedModel?.name||'Radio Control'"));
+ assert.ok(js.includes("Firmware HN5RV01 is identified during the same complete read."));
+ assert.ok(!js.includes("identifyButton=document.createElement"));
+ assert.ok(!app.includes("identifiedReadSession"));
 });

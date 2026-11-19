@@ -38,9 +38,8 @@ if(page&&original&&editor){
  const title=document.createElement('h2');title.className='rm-model';title.textContent='Radio Control';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
  const readHint=document.createElement('p');readHint.className='rm-read-hint';readHint.textContent='Read the radio’s programmed channels from the physical device.';
- const identifyButton=document.createElement('button');identifyButton.type='button';identifyButton.id='radio-identify';identifyButton.className='rm-identify-button';identifyButton.textContent='Identify Radio';identifyButton.disabled=true;
  const primaryConnect=document.createElement('button');primaryConnect.type='button';primaryConnect.id='rm-primary-connect';primaryConnect.className='rm-primary-button';primaryConnect.textContent='Connect Radio';
- centre.append(title,firmware,primaryConnect,identifyButton);
+ centre.append(title,firmware,primaryConnect);
  const status=document.createElement('div');status.className='rm-status';
  const heading=document.createElement('h3');heading.textContent='Select Radio';
  const statusLabel=document.createElement('h4');statusLabel.className='rm-status-label';statusLabel.textContent='Radio Status';
@@ -104,24 +103,22 @@ if(page&&original&&editor){
   const supportsPhysicalRead=selectedModel?.physicalRead===true;
   const connected=$('usb-indicator')?.dataset.state==='connected';
   const identified=supportsPhysicalRead&&$('radio-indicator')?.dataset.state==='connected';
-  title.textContent='Radio Control';
+  // Show the chosen physical radio name in the centre header, not a generic label.
+  title.textContent=selectedModel?.name||'Radio Control';
   portValue.textContent=connected?'USB serial connected':'Disconnected';
   fwValue.textContent=!supportsPhysicalRead?'Unsupported':identified?'HN5RV01':'Not identified';
   firmware.textContent=!supportsPhysicalRead?'Physical radio protocol not yet supported':identified?'Firmware HN5RV01':'Firmware not yet identified';
-  connection.textContent=!supportsPhysicalRead?'Model preview only — physical read unavailable':identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
+  connection.textContent=!supportsPhysicalRead?'Model preview only — physical read unavailable':identified?'Physical radio identified':connected?'USB connected — identity verified during Read':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
   // Exactly one primary action is visible. Never present Read before firmware identification.
   primaryConnect.hidden=connected;
-  identifyButton.hidden=!connected||identified||!supportsPhysicalRead;
-  read.hidden=!identified||!supportsPhysicalRead;
+  // PR #51 reads firmware and all 128 slots in one uninterrupted transaction.
+  read.hidden=!connected||!supportsPhysicalRead;
   primaryConnect.textContent=supportsPhysicalRead?'Connect Radio':'Physical read not yet supported';
   primaryConnect.disabled=connect.disabled||!supportsPhysicalRead;
-  identifyButton.disabled=!connected||read.disabled||!supportsPhysicalRead;
-  if(!identifyButton.disabled)identifyButton.textContent='Identify Radio';
   readHint.textContent=!supportsPhysicalRead?'UV-32 and UV-5R physical identification and memory reading are not yet implemented.'
    :!connected?'Connect the physical radio using its USB programming cable.'
-   :!identified?'Identify the UV-16 and verify firmware HN5RV01 before reading memories.'
-   :'Read the radio’s programmed channels from the physical device.';
+   :'Read the radio’s channels. Firmware HN5RV01 is identified during the same complete read.';
   for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }

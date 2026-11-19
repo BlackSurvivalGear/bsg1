@@ -41,10 +41,9 @@ test('rejects out-of-range memory slots and unsupported capacity',async()=>{
  Session:class{async readMemory(){return {...sample,capacity:256};}}}),/Unexpected memory response/);
 });
 
-test('continues supplied identified session without creating another session',async()=>{
- const writes=[],session={readMemory:async()=>{writes.push('continue');return sample;}};
- const result=await readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',
-  identifiedSession:session,Session:class{constructor(){throw Error('unexpected new handshake');}}});
- assert.equal(result.channels.length,6);
- assert.deepEqual(writes,['continue']);
+test('one new session is created for each complete read',async()=>{
+ const calls=[];
+ const Session=class{constructor(){calls.push('new');}async readMemory(){calls.push('full-read');return sample;}};
+ await readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',Session});
+ assert.deepEqual(calls,['new','full-read']);
 });

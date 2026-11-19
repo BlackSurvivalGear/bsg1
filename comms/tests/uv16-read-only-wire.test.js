@@ -12,7 +12,7 @@ const rows=[
 '00 25 03 45 00 25 03 45 00 00 00 00 00 00 00 44',
 'ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff'
 ];
-function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,extraSlot=-1,rejectAckAt=-1}={}){
+function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,extraSlot=-1}={}){
  const chunks=[];let writes=[];let magic=0;let idAck=false;
  const queue=arr=>chunks.push(Uint8Array.from(arr));
  const port={
@@ -29,7 +29,6 @@ function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,e
     if(addr===0)for(let i=0;i<4;i++)body.set(fromHex(rows[i]),i*16);
     if(addr===64)for(let i=0;i<4;i++)body.set(fromHex(rows[i+4]),i*16);
     if(extraSlot>=8&&addr===Math.floor(extraSlot/4)*64)body.set(fromHex(rows[0]),(extraSlot%4)*16);
-    if(addr===rejectAckAt){queue([0x15]);return;}
     queue([6,badHeader?0x59:0x58,data[1],data[2],64,...body]);return;
    }
    if(data.length===1&&data[0]===6)return;
@@ -87,66 +86,16 @@ test('incomplete full-memory transfer rejects without returning partial channels
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
 });
 
-test('identify checks firmware with one allowlisted read and no channel scan',async()=>{
- const d=device();
- const session=new UV16ReadOnlySession({port:d.port});
- const identity=await session.identify();
- assert.equal(identity.firmware,'HN5RV01');
- assert.equal(identity.model,'uv-16-pro-v2');
- assert.equal(identity.readOnly,true);
- assert.equal(identity.hardwareVerified,false);
- const reads=d.writes.filter(cmd=>cmd[0]===0x53);
- assert.equal(reads.length,2);
- assert.deepEqual(reads[0],[0x53,0x1e,0x80,64]);
- assert.deepEqual(reads[1],[0x53,0x1e,0xc0,64]);
- assert.equal(d.writes.some(cmd=>cmd[0]===0x57),false);
- await assert.rejects(session.identify(),{code:'SESSION_USED'});
-});
-test('identity rejects wrong firmware without scanning memories',async()=>{
- const d=device({badFirmware:true});
- await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_FIRMWARE'});
- assert.equal(d.writes.filter(cmd=>cmd[0]===0x53).length,2);
-});
-test('identity rejects unexpected handshake and sends no memory commands',async()=>{
- const d=device({badIdentity:true});
- await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_IDENTITY'});
- assert.equal(d.writes.some(cmd=>cmd[0]===0x53),false);
-});
-
-test('read reuses identified session and does not issue another magic handshake',async()=>{
+test('physically validated PR #51 session never provides a split identify method',async()=>{
  const d=device(),session=new UV16ReadOnlySession({port:d.port});
- const identity=await session.identify();
- assert.equal(identity.firmware,'HN5RV01');
+ assert.equal('identify' in session,false);
  const result=await session.readMemory();
+ assert.equal(result.firmware,'HN5RV01');
  assert.equal(result.capacity,128);
- assert.equal(result.channels.length,6);
  assert.equal(d.writes.filter(x=>x.length===1&&x[0]===0x50).length,1);
- assert.equal(d.writes.filter(x=>x[0]===0x53).length,35); // 2 identify aux + 1 remaining aux + 32 memories
+ assert.deepEqual(d.writes.filter(x=>x[0]===0x53).slice(0,3),[
+  [0x53,0x1e,0x80,64],[0x53,0x1e,0xc0,64],[0x53,0x1f,0xc0,64]
+ ]);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,35);
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
- await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
-});
-test('failed identification closes session and cannot continue into read',async()=>{
- const d=device({badFirmware:true}),session=new UV16ReadOnlySession({port:d.port});
- await assert.rejects(session.identify(),{code:'WRONG_FIRMWARE'});
- await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
-});
-
-test('reports exact failing block and byte without leaking payloads or importing partial channels',async()=>{
- const d=device({rejectAckAt:0x1fc0}),session=new UV16ReadOnlySession({port:d.port});
- await session.identify();
- await assert.rejects(session.readMemory(),error=>{
-   assert.equal(error.code,'BAD_ACK');
-   assert.equal(error.address,0x1fc0);
-   assert.equal(error.phase,'ack');
-   assert.equal(error.expected,0x06);
-   assert.equal(error.actual,0x15);
-   assert.match(error.message,/0x1FC0/);
-   assert.match(error.message,/received 0x15/);
-   return true;
- });
- assert.equal(d.writes.some(x=>x[0]===0x57),false);
-});
-test('read-only frame corruption names the failing address',async()=>{
- await assert.rejects(new UV16ReadOnlySession({port:device({badHeader:true}).port}).readMemory(),
-   error=>error.code==='BAD_FRAME'&&error.address===0x1e80&&/0x1E80/.test(error.message));
 });
