@@ -4,9 +4,8 @@ import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
 import {validateUV16ReadRegions} from './uv16-read-regions.js';
 import {compareBFF8HPCHIRPGuard} from './uv16-chirp-guard-comparison.js';
-import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js';
 import {inspectUV16Slot} from './uv16-offline-frequency-codec.js';
-import {previewUV16OfflineWrite,formatUV16OfflineWritePreview} from './uv16-write-preview.js';
+import {writeUV16OneChannel,prepareUV16HardwareChange,compareUV16HardwareReadback} from './uv16-hardware-write.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
@@ -26,80 +25,6 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 $('add').onclick=()=>{if(channels.length>=1000)return alert('Maximum 1000 channels');channels.push(normaliseChannel({name:'NEW',rx:'145.500',tx:'145.500',mode:'FM',notes:''}));render();};
 $('export').onclick=()=>download('bsg-comms-channels.csv',toCSV(channels),'text/csv');
 $('backup').onclick=()=>download('bsg-comms-backup.json',JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
-const writePreparationButton=$('prepare-uv16-write');
-const writePreparationResult=$('uv16-write-preparation-result');
-writePreparationButton.onclick=()=>{
- // This is a local assessment only: it must never use the USB port or issue a write.
- const plan=prepareUV16WritePlan({model,channels});
- writePreparationResult.hidden=false;
- writePreparationResult.textContent=formatUV16WritePlan(plan);
- if(model==='uv-16-pro-v2'){
-  // Download a JSON backup of *editor channels*, not a purported radio memory clone.
-  download('bsg-comms-uv16-editor-before-write.json',
-   JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
- }
-};
-
-// Deliberately separate from radio connection and physical Write/Verify.
-let offlinePreviewSnapshot=null;
-const offlineFile=$('uv16-preview-file'),offlineSlot=$('uv16-preview-slot');
-const offlineRx=$('uv16-preview-rx'),offlineTx=$('uv16-preview-tx');
-const offlineRun=$('uv16-preview-run'),offlineResult=$('uv16-preview-result');
-function resetOfflinePreview(){
- offlinePreviewSnapshot=null;
- offlineSlot.replaceChildren(new Option('Import a snapshot first',''));
- offlineSlot.disabled=true;offlineRx.disabled=true;offlineTx.disabled=true;
- offlineRx.value='';offlineTx.value='';offlineRun.disabled=true;
- offlineResult.textContent='No validated snapshot loaded. Hardware Write and Verify remain disabled.';
-}
-offlineFile.addEventListener('change',async()=>{
- resetOfflinePreview();
- const file=offlineFile.files?.[0];
- if(!file)return;
- try{
-  if(file.size>1024*1024)throw Error('Snapshot file exceeds the 1 MB limit');
-  const snapshot=JSON.parse(await file.text());
-  validateUV16ReadRegions(snapshot);
-  const slots=[];
-  for(let slot=0;slot<128;slot++){
-   if(snapshot.memory.bytesHex.slice(slot*32,slot*32+2)==='ff')continue;
-   const record=inspectUV16Slot(snapshot,slot);
-   slots.push(record);
-  }
-  if(!slots.length)throw Error('Snapshot contains no occupied memories');
-  offlinePreviewSnapshot=snapshot;
-  offlineSlot.replaceChildren(new Option('Choose a radio memory',''));
-  for(const record of slots)offlineSlot.add(new Option('M'+String(record.slot+1).padStart(2,'0')+
-   ' — '+record.rxMHz+' / '+record.txMHz+' MHz',String(record.slot)));
-  offlineSlot.disabled=false;
-  offlineResult.textContent='Validated '+slots.length+' occupied memories. Select a slot. This snapshot is not a restorable backup.';
- }catch(error){resetOfflinePreview();offlineResult.textContent='Snapshot rejected: '+error.message;}
-});
-offlineSlot.addEventListener('change',()=>{
- offlineRun.disabled=true;offlineRx.disabled=true;offlineTx.disabled=true;
- offlineRx.value='';offlineTx.value='';
- if(!offlinePreviewSnapshot||offlineSlot.value==='')return;
- try{
-  const record=inspectUV16Slot(offlinePreviewSnapshot,Number(offlineSlot.value));
-  offlineRx.value=String(record.rxMHz);offlineTx.value=String(record.txMHz);
-  offlineRx.disabled=false;offlineTx.disabled=false;offlineRun.disabled=false;
-  offlineResult.textContent='Memory '+(record.slot+1)+' selected. Original RX '+record.rxMHz+
-   ' MHz / TX '+record.txMHz+' MHz. Unknown settings are preserved; no hardware write is possible.';
- }catch(error){offlineResult.textContent='Selection rejected: '+error.message;}
-});
-offlineRun.addEventListener('click',()=>{
- if(!offlinePreviewSnapshot||offlineSlot.value==='')return;
- try{
-  const slot=Number(offlineSlot.value),original=inspectUV16Slot(offlinePreviewSnapshot,slot);
-  if(offlineRx.value.trim()===''||offlineTx.value.trim()==='')throw Error('Both proposed frequencies are required');
-  const report=previewUV16OfflineWrite({snapshot:offlinePreviewSnapshot,changes:[{
-   slot,expectedRxMHz:original.rxMHz,expectedTxMHz:original.txMHz,
-   newRxMHz:Number(offlineRx.value),newTxMHz:Number(offlineTx.value)
-  }]});
-  offlineResult.textContent=formatUV16OfflineWritePreview(report);
- }catch(error){offlineResult.textContent='Preview blocked: '+error.message+'\nHardware write: BLOCKED';}
-});
-
 let importType='csv';$('chirp-import').onclick=()=>{importType='chirp';$('file').accept='.csv,text/csv';$('file').click();};$('import').onclick=()=>{importType='csv';$('file').accept='.csv';$('file').click();};$('restore').onclick=()=>{importType='json';$('file').accept='.json';$('file').click();};
 $('file').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const incoming=importType==='csv'?parseCSV(await file.text()):importType==='chirp'?parseChirpCSV(await file.text()):parseBackup(await file.text());if(incoming.length>1000)throw Error('Maximum 1000 channels');if(confirm((importType==='chirp'?'Import '+incoming.length+' CHIRP memories as RECEIVE-ONLY channels? This replaces the current local editor list but does not write to the radio.':'Replace the current channel list with '+incoming.length+' imported channels?'))){channels=incoming;render();}}catch(e){alert('Import failed: '+e.message);}event.target.value='';};
 document.addEventListener('squawk-add-receive-only-channel',event=>{
