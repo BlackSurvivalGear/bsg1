@@ -226,3 +226,11 @@ test('offline write preparation remains separate from the locked hardware write 
  assert.ok(!dryRun.includes('getWriter('));
  assert.ok(!dryRun.includes('0x57'));
 });
+
+test('offline write assessment is invalidated after channel edits, imports or model switch',()=>{
+ assert.ok(app.includes("function render(){const stalePlan=$('uv16-write-preparation-result');"));
+ assert.ok(app.includes("stalePlan.hidden=true;stalePlan.textContent=''"));
+ assert.ok(app.includes("channels=updated;render()"));
+ assert.ok(app.includes("channels=readChannels();"));
+ assert.ok(app.includes("render();"));
+});
