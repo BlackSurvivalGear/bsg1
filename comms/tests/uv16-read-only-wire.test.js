@@ -85,3 +85,28 @@ test('incomplete full-memory transfer rejects without returning partial channels
  await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory(),/Simulated missing read block/);
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
 });
+
+test('identify checks firmware with one allowlisted read and no channel scan',async()=>{
+ const d=device();
+ const session=new UV16ReadOnlySession({port:d.port});
+ const identity=await session.identify();
+ assert.equal(identity.firmware,'HN5RV01');
+ assert.equal(identity.model,'uv-16-pro-v2');
+ assert.equal(identity.readOnly,true);
+ assert.equal(identity.hardwareVerified,false);
+ const reads=d.writes.filter(cmd=>cmd[0]===0x53);
+ assert.equal(reads.length,1);
+ assert.deepEqual(reads[0],[0x53,0x1e,0xc0,64]);
+ assert.equal(d.writes.some(cmd=>cmd[0]===0x57),false);
+ await assert.rejects(session.identify(),{code:'SESSION_USED'});
+});
+test('identity rejects wrong firmware without scanning memories',async()=>{
+ const d=device({badFirmware:true});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_FIRMWARE'});
+ assert.equal(d.writes.filter(cmd=>cmd[0]===0x53).length,1);
+});
+test('identity rejects unexpected handshake and sends no memory commands',async()=>{
+ const d=device({badIdentity:true});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_IDENTITY'});
+ assert.equal(d.writes.some(cmd=>cmd[0]===0x53),false);
+});
