@@ -138,16 +138,16 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
 
-test('global header removed; BSG crest navigates home from sidebar',()=>{
+test('global header removed; BSG crest navigates home beside page title',()=>{
  assert.ok(!html.includes('<body><header>'));
  assert.ok(!html.includes('<header>'));
- assert.ok(shell.includes("homeLink.className='bsg-logo-home sidebar-logo-home'"));
+ assert.ok(shell.includes("homeLink.className='bsg-logo-home workspace-home-logo'"));
  assert.ok(shell.includes("homeLink.href='https://blacksurvivalgear.github.io/bsg1/'"));
  assert.ok(shell.includes("homeLogo.src='../BSG%20GOLD%20LOGO.png'"));
  assert.ok(shell.includes("homeLink.setAttribute('aria-label','Return to BSG central homepage')"));
- assert.ok(shell.indexOf('sidebar.append(homeLink)')<shell.indexOf('sidebar.append(brand)'));
+ assert.ok(shell.includes('topbar.append(homeLink,heading)'));
  const styles=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- assert.ok(styles.includes('.app-sidebar .sidebar-logo-home:focus-visible'));
+ assert.ok(styles.includes('.workspace-topbar .workspace-home-logo:focus-visible'));
  assert.ok(styles.includes('.app-shell{min-height:100vh}'));
 });
 test('radio workflow has four steps, Read completes after full channel scan',()=>{
