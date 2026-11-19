@@ -134,3 +134,32 @@ test('guard read failure never returns a partial capture or changes write safety
  await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureRaw:true,captureCHIRPGuard:true}),/Simulated missing read block/);
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
 });
+
+test('opt-in full read captures exactly 6144 main bytes and five auxiliary regions, never write',async()=>{
+ const d=device();
+ const progress=[];
+ const result=await new UV16ReadOnlySession({port:d.port}).readMemory({
+  captureRaw:true,captureCHIRPGuard:true,captureFullMain:true,onProgress:p=>progress.push(p)
+ });
+ assert.equal(result.fullMainCapture.format,'bsg-uv16-full-main-read-v1');
+ assert.equal(result.fullMainCapture.restorable,false);
+ assert.equal(result.fullMainCapture.main.length,6144);
+ assert.equal(result.fullMainCapture.main.bytesHex.length,12288);
+ assert.deepEqual(result.fullMainCapture.auxiliary.map(x=>x.address),[0x1ec0,0x1f00,0x1f40,0x1f80,0x1fc0]);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,102);
+ assert.deepEqual(progress.at(-1),{blocksRead:96,totalBlocks:96});
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+ assert.equal(result.rawSnapshot.memory.bytesHex,result.fullMainCapture.main.bytesHex.slice(0,4096));
+});
+test('full read requires both raw and guard capture before sending commands',async()=>{
+ const d=device();
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureFullMain:true}),{code:'INVALID_CAPTURE'});
+ assert.equal(d.writes.length,0);
+});
+test('interrupt in expanded main area rejects complete read with no returned data',async()=>{
+ const d=device({failAt:0x1000});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({
+  captureRaw:true,captureCHIRPGuard:true,captureFullMain:true
+ }),/Simulated missing read block/);
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+});
