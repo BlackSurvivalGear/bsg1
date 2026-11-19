@@ -117,3 +117,57 @@
   .approved-radio-manager .rm-main{grid-column:1;grid-row:2}
   .approved-radio-manager .rm-photo{grid-column:1;grid-row:3;height:200px;max-height:200px;max-width:210px}
 }
+
+/* Read results belong to the principal physical-radio action, not the channel table. */
+.approved-radio-manager #uv16-read-preview.rm-source-preview{display:none!important}
+.approved-radio-manager .rm-read-summary{
+  border:1px solid #456b4c;border-radius:10px;background:#112d1b;
+  padding:13px 15px;display:flex;flex-direction:column;gap:5px;
+  max-width:100%;overflow-wrap:anywhere
+}
+.approved-radio-manager .rm-read-summary[hidden]{display:none!important}
+.approved-radio-manager .rm-read-summary strong{font-size:.96rem;color:#dbe9d6}
+.approved-radio-manager .rm-read-summary p{margin:0;color:#b8cbb9;font-size:.82rem;line-height:1.4}
+.approved-radio-manager .rm-read-summary.is-success{border-color:#4a9361;background:#123322}
+.approved-radio-manager .rm-read-summary.is-success strong{color:#8cee9d}
+.approved-radio-manager .rm-read-summary.is-error{border-color:#ba7857;background:#302018}
+.approved-radio-manager .rm-read-summary.is-error strong{color:#f4b08f}
+
+/* Remove the legacy off-centre connection console from the expanded disclosure.
+   The original nodes and handlers remain mounted for the live radio workflow. */
+.approved-radio-manager .rm-advanced>.radio-console[hidden]{display:none!important}
+.approved-radio-manager .rm-diagnostic-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  max-width:1040px;width:100%;margin:0 auto;gap:16px;padding:18px 18px 8px;
+  align-items:stretch
+}
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card{
+  display:block;min-width:0;width:100%;height:100%;margin:0;align-self:stretch;
+  max-height:none;overflow:hidden;border:1px solid #456b49;border-radius:12px;
+  background:#14271a;box-shadow:none;padding:0 0 12px
+}
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>summary{
+  padding:15px 16px;color:#e6d2a1;background:#1b3222;
+  font-size:.98rem;font-weight:750;line-height:1.3;
+  border-bottom:1px solid #36573e
+}
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>.usb-diagnostics-info{
+  display:block;min-width:0;max-height:215px;min-height:170px;
+  margin:12px;padding:13px;overflow:auto;white-space:pre-wrap;
+  overflow-wrap:anywhere;background:#09150e;color:#cce1ce;
+  border:1px solid #2f5138;border-radius:8px;font-size:.78rem;line-height:1.5
+}
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>.actions,
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>p,
+.approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>[role="status"]{display:none!important}
+.approved-radio-manager .rm-diagnostic-toolbar{
+  display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
+  gap:12px;margin:0 auto;padding:8px 18px 20px;
+  max-width:1040px
+}
+.approved-radio-manager .rm-diagnostic-toolbar button{min-height:42px;padding:10px 16px;font-size:.85rem}
+.approved-radio-manager .rm-copy-feedback{font-size:.82rem;color:#b8d9bc}
+@media(max-width:760px){
+  .approved-radio-manager .rm-diagnostic-grid{grid-template-columns:minmax(0,1fr);padding:12px}
+  .approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>.usb-diagnostics-info{min-height:110px;max-height:180px}
+}
