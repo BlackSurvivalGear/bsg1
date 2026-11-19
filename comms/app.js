@@ -30,6 +30,8 @@ document.addEventListener('squawk-add-receive-only-channel',event=>{
  catch(error){alert('Unable to add channel: '+error.message);}
 });
 let physicalRadioIdentified=false;
+let identifiedReadSession=null;
+function clearIdentifiedSession(){identifiedReadSession?.close();identifiedReadSession=null;}
 const radioRead=$('radio-read');
 const samplePreview=$('uv16-read-preview');
 let sampleReading=false;
@@ -111,7 +113,10 @@ function addDiagnostic(message){
 const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
-    if(state!=='connected'||mode!=='usb')physicalRadioIdentified=false;
+    if(state!=='connected'||mode!=='usb'){
+      physicalRadioIdentified=false;
+      clearIdentifiedSession();
+    }
     updateConnectionIndicators({state,mode});
     if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
     if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();
@@ -143,13 +148,18 @@ document.addEventListener('click',async event=>{
   const button=$('radio-identify');
   if(button)button.textContent='Identifying…';
   try{
-    const result=await new UV16ReadOnlySession({port:connectionManager.port}).identify();
+    clearIdentifiedSession();
+    const session=new UV16ReadOnlySession({port:connectionManager.port});
+    // Keep the protocol session alive after Identify; a second MAGIC would be rejected.
+    identifiedReadSession=session;
+    const result=await session.identify();
     physicalRadioIdentified=true;
     updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
     addDiagnostic('Physical UV-16 identity verified: '+result.firmware+' (no channel read or write)');
     logRadioEvent('Read-only identity check complete: '+result.firmware);
   }catch(error){
+    clearIdentifiedSession();
     physicalRadioIdentified=false;updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='Radio identification failed: '+error.message+'. USB remains connected.';
     addDiagnostic('Physical radio identification failed: '+error.message);
@@ -191,7 +201,9 @@ radioRead.onclick=async()=>{
   $('usb-disconnect').disabled=true;
   samplePreview.textContent='Reading UV-16 Pro V2 — connecting…';
   try{
-    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+    const existingSession=identifiedReadSession;
+    identifiedReadSession=null;
+    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,identifiedSession:existingSession,
       onProgress:({blocksRead,totalBlocks})=>{samplePreview.textContent='Reading UV-16 Pro V2… '+Math.round(100*blocksRead/totalBlocks)+'%';}});
     physicalRadioIdentified=true;
     updateConnectionIndicators(connectionManager.snapshot());
@@ -218,7 +230,10 @@ radioRead.onclick=async()=>{
     addDiagnostic('Loaded '+missing+' new UV-16 frequency rows; '+(result.channels.length-missing)+' duplicates skipped; previous editor backed up when nonempty');
     logRadioEvent('Added '+missing+' new UV-16 channel rows; no radio changes made');
   }catch(error){
-    samplePreview.textContent='Read failed — '+(error.code==='TIMEOUT'?'radio did not respond':error.message)+'. No channel changes made. Reconnect USB before another attempt.';
+    clearIdentifiedSession();
+    physicalRadioIdentified=false;
+    updateConnectionIndicators(connectionManager.snapshot());
+    samplePreview.textContent='Read failed — '+(error.code==='TIMEOUT'?'radio did not respond':error.code==='BAD_ACK'?'radio handshake rejected':error.message)+'. No channel changes made. Power-cycle the radio and reconnect USB before retrying.';
     addDiagnostic('UV-16 memory read failed: '+error.message);
     logRadioEvent('UV-16 read failed: '+error.message);
   }finally{
