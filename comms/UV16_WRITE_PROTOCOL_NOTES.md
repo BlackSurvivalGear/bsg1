@@ -35,3 +35,26 @@ User-supplied HN5RV01 raw-read-region snapshot and matching local editor JSON we
 New `uv16-offline-frequency-codec.js` is an isolated experiment: it supports encode/decode round trips for four-byte frequency BCD and hypothetical single-record diffs only when the caller supplies an existing populated slot and its exact expected RX and TX frequencies. The result lists the changed absolute byte offsets, preserves offsets 8–15, **does not emit a full writable image or hardware protocol frame**, and explicitly declares hardware write disabled. Automated tests use **synthetic records**, not the user's personal snapshot.
 
 **NOT A VERIFIED RADIO WRITER:** These offline BCD results do not establish the write opcode, channel-option mapping, erase/commit requirements, full recoverability, slot assignment for editor rows or independent physical verification. No code in this PR opens a serial port, changes device memory or enables Write/Verify. Never treat the hypothetical diff as a write-ready payload.
+
+## PR #68 — unknown-setting evidence audit and protocol gates (offline only)
+
+The user-supplied HN5RV01 snapshot and matching editor backup were examined locally (not committed):
+- All five occupied slots (zero-based 2–6) have the same bytes 8–15: `00 00 00 00 00 00 00 44`.
+- **There is no controlled variation in these eight bytes**, so there is **no evidence to identify power, CTCSS/DCS, scan, bandwidth or transmit-disable bit positions**. The trailing `0x44` must not be labelled a flag or checksum.
+- 123 slots are treated as unprogrammed by first-byte `0xff`, of which only two are entirely `ff`. The other 121 contain residual values, including a repeated apparent prior frequency pattern. No interpretation of these as current settings is warranted.
+- The three auxiliary regions contain additional bytes, including recognizable ASCII, but the fields' semantic meanings and safe write ranges are unknown. They are **read-only evidence**, not presumed settings.
+- The firmware-matched radio **write command, ACK sequencing, writable address boundaries, erase/commit stage, on-device image validation and interrupted-write recovery are NOT established**. An existing READ command does not establish a WRITE command.
+
+`uv16-settings-evidence.js` now offers a *purely offline* audit and optional comparison of **two independently captured, validated read snapshots**. It inventories active and unused slots, shows raw bytes 8–15 without guessing field names, reports absolute byte changes in occupied records and auxiliary blocks, and rejects changed slot occupancy. It intentionally ignores residual changes in unprogrammed slots and never outputs a write buffer or communicates with any serial port. Tests use synthetic snapshots, not uploaded radio data.
+
+**Future evidence requirement:** A properly controlled series of read-only before/after captures with a known single radio setting changed by the radio's own user interface could allow a tentative mapping, but correlation alone is insufficient to authorize physical writes. The radio's built-in controls and capabilities must be documented and the write protocol independently corroborated. Preserve readback and recovery safeguards; do not unlock any physical programming controls in this PR.
+
+### Gate for any later physical write
+- [ ] Confirm exact firmware/identity and authorized writable ranges.
+- [ ] Independently map and test all fields that will be changed; preserve unknown bits and reserved bytes.
+- [ ] Establish complete **restorable** backup and successful restoration, including auxiliary settings.
+- [ ] Verify protocol framing, acknowledgement/commit behavior and partial-transfer recovery without risking the user's working radio.
+- [ ] Test exact desired channels and transmit restrictions under applicable authorization.
+- [ ] Require explicit, separate approval before hardware writing, then independently verify readback.
+
+At PR #68 all gates above remain open. **Hardware Write and Verify remain disabled.**
