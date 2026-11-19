@@ -77,6 +77,7 @@ function refreshReadButton(){
 const usbIndicator=$('usb-indicator');
 const radioIndicator=$('radio-indicator');
 function updateConnectionIndicators(snapshot){
+ if(snapshot.state!=='connected')clearReadSnapshot();
  const status=radioConnectionIndicators({...snapshot,identified:physicalRadioIdentified});
  for(const [element,value] of [[usbIndicator,status.usb],[radioIndicator,status.radio]]){
   element.dataset.state=value.state;
