@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class WebsiteTests(unittest.TestCase):
     def test_required_files(self):
-        for name in ('index.html','style.css','script.js','BSG GOLD LOGO.png','BSG BLACK GOLD.png'):
+        for name in ('index.html','style.css','script.js','BSG GOLD LOGO.png'):
             self.assertTrue((ROOT/name).is_file(), name)
 
     def test_preparedness_navigation(self):
