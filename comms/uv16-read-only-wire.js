@@ -54,7 +54,12 @@ export class UV16ReadOnlySession {
     return block;
   }
   async #identifyHandshake(signal){
-      await this.#identifyHandshake(signal);
+      for(const byte of MAGIC)await this.#command([byte],signal);
+      if(!same([...await this.#receive(1,signal)],[6]))fail('Magic rejected','BAD_ACK');
+      await this.#command([2],signal);
+      if(!same([...await this.#receive(8,signal)],ID))fail('Unexpected identity','WRONG_IDENTITY');
+      await this.#command([6],signal);
+      if(!same([...await this.#receive(1,signal)],[6]))fail('Identity ACK rejected','BAD_ACK');
   }
   async identify({signal}={}){
     if(this.#used)fail('Session already used','SESSION_USED');
@@ -72,12 +77,7 @@ export class UV16ReadOnlySession {
     if(this.#used)fail('Session already used','SESSION_USED');
     this.#used=true;
     try{
-      for(const byte of MAGIC)await this.#command([byte],signal);
-      if(!same([...await this.#receive(1,signal)],[6]))fail('Magic rejected','BAD_ACK');
-      await this.#command([2],signal);
-      if(!same([...await this.#receive(8,signal)],ID))fail('Unexpected identity','WRONG_IDENTITY');
-      await this.#command([6],signal);
-      if(!same([...await this.#receive(1,signal)],[6]))fail('Identity ACK rejected','BAD_ACK');
+      await this.#identifyHandshake(signal);
       for(const address of AUX){
         const block=await this.#readBlock(address,signal);
         if(address===0x1ec0){
