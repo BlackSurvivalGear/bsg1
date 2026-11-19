@@ -35,22 +35,21 @@ if(page&&original&&editor){
  refreshRadioImage();
  modelSelector?.addEventListener('change',refreshRadioImage);
  const centre=document.createElement('div');centre.className='rm-main';
- const title=document.createElement('h2');title.className='rm-model';title.textContent=$('model-name')?.textContent||'Radio Manager';
+ const title=document.createElement('h2');title.className='rm-model';title.textContent='Radio Control';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
  const readHint=document.createElement('p');readHint.className='rm-read-hint';readHint.textContent='Read the radio’s programmed channels from the physical device.';
  const identifyButton=document.createElement('button');identifyButton.type='button';identifyButton.id='radio-identify';identifyButton.className='rm-identify-button';identifyButton.textContent='Identify Radio';identifyButton.disabled=true;
  const primaryConnect=document.createElement('button');primaryConnect.type='button';primaryConnect.id='rm-primary-connect';primaryConnect.className='rm-primary-button';primaryConnect.textContent='Connect Radio';
  centre.append(title,firmware,primaryConnect,identifyButton);
  const status=document.createElement('div');status.className='rm-status';
- const heading=document.createElement('h3');heading.textContent='Radio Status';
+ const heading=document.createElement('h3');heading.textContent='Select Radio';
+ const statusLabel=document.createElement('h4');statusLabel.className='rm-status-label';statusLabel.textContent='Radio Status';
  const connection=document.createElement('p');connection.className='rm-live-state';connection.textContent='Radio disconnected';
- const modelLine=document.createElement('div');modelLine.className='rm-status-line';modelLine.innerHTML='<span>Model</span>';
- const modelValue=document.createElement('strong');modelLine.append(modelValue);
  const portLine=document.createElement('div');portLine.className='rm-status-line';portLine.innerHTML='<span>Connection</span>';
  const portValue=document.createElement('strong');portLine.append(portValue);
  const fwLine=document.createElement('div');fwLine.className='rm-status-line';fwLine.innerHTML='<span>Firmware</span>';
  const fwValue=document.createElement('strong');fwLine.append(fwValue);
- status.append(heading,connection,modelLine,portLine,fwLine);
+ status.append(heading);
  const toolbar=document.createElement('div');toolbar.className='rm-actions';
  const connect=$('connect'),disconnect=$('usb-disconnect'),read=$('radio-read'),
   write=$('radio-write-placeholder'),verify=$('radio-verify-write-placeholder');
@@ -68,7 +67,9 @@ if(page&&original&&editor){
  backup.onclick=()=>{page.querySelector('.radio-editor-file-actions')?.scrollIntoView({behavior:'smooth',block:'center'});};
  toolbar.append(backup);
  const config=$('radio-model')?.closest('.radio-selection-row');if(config){config.classList.add('rm-model-picker');status.append(config);}
- hero.append(photo,centre,status);
+ status.append(statusLabel,connection,portLine,fwLine);
+ // Selection and physical status come first; the live action stays central and artwork previews on the right.
+ hero.append(status,centre,photo);
  const advanced=document.createElement('details');advanced.className='rm-advanced';
  const summary=document.createElement('summary');summary.textContent='Connection settings and diagnostics';advanced.append(summary,original);
  page.insertBefore(steps,editor);page.insertBefore(hero,editor);page.insertBefore(toolbar,editor);page.insertBefore(advanced,editor);
@@ -103,8 +104,7 @@ if(page&&original&&editor){
   const supportsPhysicalRead=selectedModel?.physicalRead===true;
   const connected=$('usb-indicator')?.dataset.state==='connected';
   const identified=supportsPhysicalRead&&$('radio-indicator')?.dataset.state==='connected';
-  title.textContent=$('model-name')?.textContent||'Radio Manager';
-  modelValue.textContent=title.textContent;
+  title.textContent='Radio Control';
   portValue.textContent=connected?'USB serial connected':'Disconnected';
   fwValue.textContent=!supportsPhysicalRead?'Unsupported':identified?'HN5RV01':'Not identified';
   firmware.textContent=!supportsPhysicalRead?'Physical radio protocol not yet supported':identified?'Firmware HN5RV01':'Firmware not yet identified';
