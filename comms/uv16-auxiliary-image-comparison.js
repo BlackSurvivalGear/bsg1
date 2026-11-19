@@ -14,7 +14,8 @@ export function compareUV16CHIRPAuxiliary(image,snapshot){
  // A proposed linear file offset is NOT an independently established radio address map.
  const entries=snapshot.auxiliary.map(region=>{
   const expected=fromHex(region.bytesHex);
-  const candidateOffset=region.address+8;
+  // Two observed exact matches imply this candidate translation; it remains a hypothesis.
+  const candidateOffset=region.address-0x6b8;
   const candidate=payload.subarray(candidateOffset,candidateOffset+64);
   const exactOffsets=[];
   for(let i=0;i+64<=payload.length;i++)if(equal(payload.subarray(i,i+64),expected))exactOffsets.push(i);
