@@ -6,11 +6,6 @@ import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
 import {radioConnectionIndicators} from './radio-connection-indicators.js';
-import {NativeRadioDriver} from './native-driver.js';
-import {VirtualRadio} from './virtual-radio.js';
-import {runFamilyMockRead} from './uv5r-family-mock.js';
-import {previewRadioIdentity} from './radio-identity-preview.js';
-import {validateVirtualMemory} from './virtual-memory-validation.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
 import {parseChirpCSV} from './chirp-csv.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
@@ -33,17 +28,13 @@ document.addEventListener('squawk-add-receive-only-channel',event=>{
  try{const candidate=normaliseChannel({...event.detail,receiveOnly:true});channels.push(candidate);render();alert('Receive-only reference added to Channel Editor.');}
  catch(error){alert('Unable to add channel: '+error.message);}
 });
-let virtualRadio=null;
-let virtualDriver=null;
-const simulatorIdentity=$('simulator-identity');
-const identityPreview=$('bff8hp-identification-preview');
+let physicalRadioIdentified=false;
 const radioRead=$('radio-read');
 const samplePreview=$('uv16-read-preview');
 let sampleReading=false;
 function canReadSelectedRadio(){
   return connectionManager.state==='connected'&&(
-    (connectionManager.mode==='usb'&&model==='uv-16-pro-v2')||
-    (connectionManager.mode==='simulation'&&Boolean(virtualDriver))
+    (connectionManager.mode==='usb'&&model==='uv-16-pro-v2')
   );
 }
 function refreshReadButton(){
@@ -52,12 +43,12 @@ function refreshReadButton(){
   radioRead.disabled=sampleReading||!canReadSelectedRadio();
   radioRead.title=model==='uv-16-pro-v2'
     ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
-    :'USB memory reading is not yet implemented for this model; simulation is separate';
+    :'USB memory reading is not yet implemented for this model';
 }
 const usbIndicator=$('usb-indicator');
 const radioIndicator=$('radio-indicator');
 function updateConnectionIndicators(snapshot){
- const status=radioConnectionIndicators(snapshot);
+ const status=radioConnectionIndicators({...snapshot,identified:physicalRadioIdentified});
  for(const [element,value] of [[usbIndicator,status.usb],[radioIndicator,status.radio]]){
   element.dataset.state=value.state;
   element.querySelector('.radio-indicator-detail span:last-child').textContent=value.label;
@@ -85,11 +76,9 @@ const radioDiagnosticsPanel=$('radio-diagnostics-panel');
 const radioDiagnosticsInfo=$('radio-diagnostics-info');
 const radioFeedback=$('radio-diagnostics-feedback');
 const radioEvents=[];
-let simulatedIdentity=null;
-let simulatedProtocolMock=null;
 function currentRadioReport(){
  return formatRadioDiagnosticExport(radioDiagnosticSummary({
-  ...connectionManager.snapshot(),model,identity:simulatedIdentity,protocolMock:simulatedProtocolMock
+  ...connectionManager.snapshot(),model,identity:physicalRadioIdentified?'HN5RV01':null,protocolMock:null
  }),radioEvents);
 }
 function refreshRadioDiagnostics(){
@@ -119,48 +108,32 @@ function addDiagnostic(message){
 const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
+    if(state!=='connected'||mode!=='usb')physicalRadioIdentified=false;
     updateConnectionIndicators({state,mode});
     if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
     if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();
     const busy=state==='connecting'||state==='disconnecting';
     refreshReadButton();
-    identityPreview.disabled=busy||state==='connected';
     $('connect').disabled=busy||state==='connected';
     $('usb-test').disabled=busy||state==='connected';
-    $('simulate').disabled=busy||state==='connected';
     $('usb-disconnect').disabled=busy||state!=='connected'||mode!=='usb';
-    $('radio-disconnect').disabled=busy||state!=='connected'||mode!=='simulation';
-    $('connection-state').textContent=state==='connected'?(mode==='simulation'?'Simulator connected':'USB port connected'):state;
+    $('connection-state').textContent=state==='connected'?'USB port connected':state;
     $('connection').textContent=state==='connected'
-      ?(mode==='simulation'?'Simulation only — no hardware connected.':'Serial transport open. Radio identity and programming protocol are unverified.')
+      ?(physicalRadioIdentified?'UV-16 Pro V2 · firmware HN5RV01 identified after memory read.':'USB serial connected. Radio identity is not yet confirmed.')
       :'No radio connection. Hardware programming is not supported.';
-    $('device-mode').textContent=mode==='usb'?'USB serial':mode==='simulation'?'Simulation':'None';
+    $('device-mode').textContent=mode==='usb'?'USB serial':'None';
     $('device-vendor').textContent=mode==='usb'?info.vendorId:'Unavailable';
     $('device-product').textContent=mode==='usb'?info.productId:'Unavailable';
     $('device-baud').textContent=baudRate===null?'Unavailable':String(baudRate);
   },
   onLog:addDiagnostic
 });
-identityPreview.onclick=async()=>{
-  if(connectionManager.state!=='disconnected')return;
-  if(!confirm('Run a SYNTHETIC identity preview for the selected radio? No USB port or physical radio will be accessed.'))return;
-  identityPreview.disabled=true;
-  try{
-    const result=await previewRadioIdentity(model,{consent:true});
-    simulatorIdentity.textContent='Identity preview: '+result.display+' · SYNTHETIC';
-    addDiagnostic('Offline '+model+' identity preview completed; synthetic, model unconfirmed, no USB commands');
-    logRadioEvent('Synthetic identity preview for '+model+'; no hardware verified');
-  }catch(error){addDiagnostic('BF-F8HP preview failed: '+error.message);alert(error.message);}
-  finally{identityPreview.disabled=connectionManager.state!=='disconnected';}
-};
 $('connect').onclick=async()=>{try{await connectionManager.connectUSB();}catch(e){alert('Connection failed: '+e.message);}};
 $('usb-test').onclick=async()=>{
   if(connectionManager.state!=='disconnected')return;
   const button=$('usb-test');
   button.disabled=true;
   $('connect').disabled=true;
-  $('simulate').disabled=true;
-  identityPreview.disabled=true;
   button.textContent='Testing USB…';
   usbDiagnosticsPanel.open=true;
   usbFeedback.textContent='Testing USB serial port. No radio commands will be sent.';
@@ -177,41 +150,10 @@ $('usb-test').onclick=async()=>{
     button.textContent='Test USB Connection';
     button.disabled=connectionManager.state!=='disconnected';
     $('connect').disabled=connectionManager.state!=='disconnected';
-    $('simulate').disabled=connectionManager.state!=='disconnected';
-    identityPreview.disabled=connectionManager.state!=='disconnected';
   }
 };
-$('simulate').onclick=async()=>{try{
-  connectionManager.connectSimulator();
-  virtualRadio=new VirtualRadio({model});
-  virtualDriver=new NativeRadioDriver({transport:virtualRadio,model});
-  const identity=await virtualDriver.identify();
-  simulatedIdentity=identity.firmware;
-  simulatedProtocolMock=null;
-  const familyMock=['uv-5r','bf-f8hp'].includes(model)?await runFamilyMockRead(model):null;
-  simulatorIdentity.textContent='Virtual radio: '+identity.model+' · '+identity.firmware+' (simulated, not physical hardware)'+(familyMock?' · '+familyMock.blockLength+'-byte protocol mock passed (synthetic data)':'');
-  if(familyMock){simulatedProtocolMock=familyMock.blockLength;addDiagnostic('Offline '+model+' mock protocol: 64-byte framed read validated; not hardware verified');}
-  refreshReadButton();
-  addDiagnostic('Virtual radio identified: '+identity.model+' (simulated)');
-  logRadioEvent('Virtual radio '+identity.model+' identified; synthetic only');
-}catch(e){virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;refreshReadButton();simulatorIdentity.textContent='Virtual radio unavailable.';simulatedIdentity=null;simulatedProtocolMock=null;logRadioEvent('Simulator error: '+e.message);addDiagnostic('Simulator error: '+e.message);try{if(connectionManager.mode==='simulation')await connectionManager.disconnect();}catch{}alert(e.message);}};
 radioRead.onclick=async()=>{
   if(sampleReading||!canReadSelectedRadio())return;
-  if(connectionManager.mode==='simulation'){
-    if(!confirm('Load SIMULATED memories into the editor for '+model+'? This replaces the local channel list; no physical radio will be accessed.'))return;
-    sampleReading=true;refreshReadButton();
-    try{
-      const memory=await virtualDriver.readMemory();
-      const incoming=validateVirtualMemory(memory,model).channels;
-      if(incoming.length>1000)throw Error('Maximum 1000 channels');
-      channels=incoming;render();
-      samplePreview.textContent='SIMULATED read complete: '+incoming.length+' local editor rows. No physical radio accessed.';
-      addDiagnostic('Loaded '+incoming.length+' simulated channels into editor');
-      logRadioEvent('Loaded '+incoming.length+' synthetic channels');
-    }catch(e){addDiagnostic('Virtual memory read failed: '+e.message);alert(e.message);}
-    finally{sampleReading=false;refreshReadButton();}
-    return;
-  }
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
   if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   sampleReading=true;refreshReadButton();
@@ -220,6 +162,9 @@ radioRead.onclick=async()=>{
   try{
     const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
       onProgress:({blocksRead,totalBlocks})=>{samplePreview.textContent='Reading UV-16 Pro V2… '+Math.round(100*blocksRead/totalBlocks)+'%';}});
+    physicalRadioIdentified=true;
+    updateConnectionIndicators(connectionManager.snapshot());
+    $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
     samplePreview.textContent=formatUV16Sample(result);
     addDiagnostic('UV-16 memory read complete: '+result.channels.length+' programmed frequencies found');
     logRadioEvent('UV-16 USB memory read complete: '+result.channels.length+' programmed channels');
@@ -255,18 +200,8 @@ $('usb-disconnect').onclick=async()=>{
   try{await connectionManager.disconnect();}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
-$('radio-disconnect').onclick=async()=>{
-  if(connectionManager.mode!=='simulation'||connectionManager.state!=='connected')return;
-  try{
-    await connectionManager.disconnect();
-    virtualRadio?.disconnect();virtualRadio=null;virtualDriver=null;
-    simulatorIdentity.textContent='Virtual radio not connected.';
-    simulatedIdentity=null;simulatedProtocolMock=null;
-    logRadioEvent('Simulated radio disconnected');
-  }catch(e){alert('Radio disconnect failed: '+e.message);}
-};
 connectionManager.setState('disconnected');
-addDiagnostic('Diagnostics ready. Only confirmed UV-16 USB sample reads can send limited radio read commands; radio writes remain disabled.');
+addDiagnostic('Diagnostics ready. UV-16 USB memory read supported; radio writing remains disabled.');
 
 
 
@@ -375,8 +310,6 @@ selector.addEventListener('change',()=>{
     return;
   }
   model=selector.value;
-  identityPreview.disabled=false;
-  simulatorIdentity.textContent='Virtual radio not connected.';
   localStorage.setItem('squawk-selected-model-v1',model);
   key=channelKey(model);
   channels=readChannels();
@@ -388,7 +321,6 @@ selector.addEventListener('change',()=>{
 });
 displayModel();
 refreshReadButton();
-identityPreview.disabled=false;
 refreshProfiles();
 render();
 
