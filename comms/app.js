@@ -50,6 +50,46 @@ snapshotExport.onclick=()=>{
 };
 let currentGuardCapture=null;
 let currentFullMainCapture=null;
+let radioBackupExported=false;
+let pendingHardwarePlan=null;
+let hardwareBusy=false;
+const liveSlot=$('uv16-live-slot'),liveRx=$('uv16-live-rx'),liveTx=$('uv16-live-tx');
+const realWrite=$('radio-write'),realVerify=$('radio-verify-write');
+function populateLiveSlots(){
+ liveSlot.replaceChildren(new Option('Select an occupied memory',''));
+ if(!currentFullMainCapture)return;
+ const data=currentFullMainCapture.main.bytesHex;
+ for(let slot=0;slot<128;slot++){
+  if(data.slice(slot*32,slot*32+2).toLowerCase()==='ff')continue;
+  const offset=slot*32;
+  const freq=h=>Number(h.match(/../g).reverse().map(v=>v.split('').join('')).join(''))/100000;
+  // Displayed values come from the same capture that write preflight will validate.
+  const rx=freq(data.slice(offset,offset+8));
+  liveSlot.add(new Option('M'+String(slot+1).padStart(2,'0')+' — '+rx.toFixed(5)+' MHz',String(slot)));
+ }
+ liveSlot.value='';
+ liveRx.value='';liveTx.value='';
+}
+function refreshWriteControls(){
+ const available=connectionManager.state==='connected'&&connectionManager.mode==='usb'&&model==='uv-16-pro-v2';
+ liveSlot.disabled=!available||!currentFullMainCapture||!!pendingHardwarePlan||hardwareBusy;
+ liveRx.disabled=liveSlot.disabled||liveSlot.value==='';
+ realWrite.disabled=!available||!currentFullMainCapture||!radioBackupExported||
+  !!pendingHardwarePlan||hardwareBusy||liveSlot.value===''||liveRx.value==='';
+ realVerify.disabled=!available||!pendingHardwarePlan||hardwareBusy;
+}
+liveSlot.onchange=()=>{
+ liveRx.value='';liveTx.value='';
+ if(currentFullMainCapture&&liveSlot.value!==''){
+  const slot=Number(liveSlot.value),main=currentFullMainCapture.main.bytesHex;
+  const raw=main.slice(slot*32,slot*32+32);
+  const decode=h=>Number(h.match(/../g).reverse().join(''))/100000;
+  liveRx.value=String(decode(raw.slice(0,8)));
+  liveTx.value=decode(raw.slice(8,16)).toFixed(5);
+ }
+ refreshWriteControls();
+};
+liveRx.oninput=refreshWriteControls;
 const fullRead=$('uv16-full-read'),fullExport=$('uv16-full-export');
 let guardReading=false;
 const guardRead=$('uv16-guard-read'),guardExport=$('uv16-guard-export');
@@ -57,6 +97,9 @@ const guardImage=$('uv16-guard-image'),guardCompare=$('uv16-guard-compare'),guar
 function clearGuardCapture(){
  currentGuardCapture=null;
  currentFullMainCapture=null;
+ radioBackupExported=false;
+ populateLiveSlots();
+ refreshWriteControls();
  fullExport.disabled=true;
  guardExport.disabled=true;
  guardCompare.disabled=true;
@@ -64,7 +107,8 @@ function clearGuardCapture(){
 }
 function refreshGuardControls(){
  guardRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
- fullRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ fullRead.disabled=sampleReading||guardReading||!!pendingHardwarePlan||hardwareBusy||!canReadSelectedRadio();
+ refreshWriteControls();
  fullExport.disabled=sampleReading||guardReading||!currentFullMainCapture;
  guardCompare.disabled=guardReading||sampleReading||!currentGuardCapture||!guardImage.files?.length;
  guardExport.disabled=!currentGuardCapture||guardReading||sampleReading;
@@ -72,6 +116,7 @@ function refreshGuardControls(){
 guardImage.onchange=()=>refreshGuardControls();
 fullExport.onclick=()=>{
  if(!currentFullMainCapture)return;
+ radioBackupExported=true;refreshWriteControls();
  download('bsg-uv16-hn5rv01-full-read-evidence.json',
   JSON.stringify({...currentFullMainCapture,capturedAt:new Date().toISOString()},null,2),'application/json');
 };
@@ -86,13 +131,14 @@ fullRead.onclick=async()=>{
   const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
    captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
   currentFullMainCapture=result.fullMainCapture;
+  populateLiveSlots();
   currentGuardCapture=result.chirpGuardCapture;
   currentReadSnapshot=result.rawSnapshot;
   snapshotExport.disabled=false;
   physicalRadioIdentified=true;
   updateConnectionIndicators(connectionManager.snapshot());
   lastPhysicalProtocol='Complete read-only main-memory capture';
-  guardStatus.textContent='Full read complete: 6144 main bytes and five stored auxiliary blocks. Export Full Read JSON. Write remains BLOCKED; not a restorable backup.';
+  guardStatus.textContent='Full read complete: 6144 main bytes. Save Radio Backup Evidence, select one memory and change RX frequency. This experimental write risks disabling the test radio.';
   addDiagnostic('UV-16 full main-memory read-only capture complete');
   logRadioEvent('UV-16 6144-byte full main capture complete; no radio changes');
  }catch(error){
