@@ -33,17 +33,7 @@ export function rehearseUV16SingleChannelWrite({snapshot,slot,expectedRxMHz,expe
  // The existing validated frequency codec only supplies an offline diff. Build
  // the candidate locally, retaining all other channel bytes verbatim.
  const after=before.slice();
- for(const change of diff.changedOffsets){
-  // No bytes are accepted from the caller: encoding comes from the codec's
-  // explicit frequency values, never from an arbitrary writable payload.
-  const field=change-address<4?newRxMHz:newTxMHz;
-  const n=Math.round(field*100000);
-  if(!Number.isSafeInteger(n)||n<=0||n>=100000000)fail('Invalid BCD frequency');
-  const digitPair=String(n).padStart(8,'0');
-  const position=(change-address)%4;
-  const j=(3-position)*2;
-  after[change]=Number.parseInt(digitPair.slice(j,j+2),16);
- }
+ after.set(Uint8Array.from(diff.afterRecordHex.match(/../g),x=>parseInt(x,16)),address);
  const changed=[];for(let i=0;i<LENGTH;i++)if(before[i]!==after[i])changed.push(i);
  if(!changed.length||changed.some(i=>Math.floor(i/BLOCK)!==slot||i%BLOCK>=8))
   fail('Invalid candidate frequency change');
