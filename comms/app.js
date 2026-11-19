@@ -239,7 +239,7 @@ radioRead.onclick=async()=>{
 };
 $('usb-disconnect').onclick=async()=>{
   if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
-  try{await connectionManager.disconnect();}
+  try{await connectionManager.disconnect();clearReadSnapshot();}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');
@@ -351,6 +351,7 @@ selector.addEventListener('change',()=>{
     alert('Disconnect before changing radio model.');
     return;
   }
+  clearReadSnapshot();
   model=selector.value;
   localStorage.setItem('squawk-selected-model-v1',model);
   key=channelKey(model);
