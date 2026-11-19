@@ -30,6 +30,7 @@ document.addEventListener('squawk-add-receive-only-channel',event=>{
  catch(error){alert('Unable to add channel: '+error.message);}
 });
 let physicalRadioIdentified=false;
+let lastPhysicalProtocol='No radio operation yet';
 let identifiedReadSession=null;
 function clearIdentifiedSession(){identifiedReadSession?.close();identifiedReadSession=null;}
 const radioRead=$('radio-read');
@@ -66,7 +67,7 @@ const usbRefresh=$('usb-refresh');
 const usbClear=$('usb-clear');
 const usbFeedback=$('usb-diagnostics-feedback');
 function currentUSBReport(){
- return formatDiagnosticExport(usbDiagnosticSummary(connectionManager.snapshot()),
+ return formatDiagnosticExport(usbDiagnosticSummary({...connectionManager.snapshot(),radioIdentified:physicalRadioIdentified,protocolStatus:lastPhysicalProtocol}),
   [...$('diagnostic-log').children].map(item=>item.textContent).reverse());
 }
 function refreshUSBDiagnostics(){usbDiagnosticsInfo.textContent=currentUSBReport();usbFeedback.textContent='Snapshot refreshed — '+new Date().toLocaleTimeString();}
@@ -83,7 +84,7 @@ const radioFeedback=$('radio-diagnostics-feedback');
 const radioEvents=[];
 function currentRadioReport(){
  return formatRadioDiagnosticExport(radioDiagnosticSummary({
-  ...connectionManager.snapshot(),model,identity:physicalRadioIdentified?'HN5RV01':null,protocolMock:null
+  ...connectionManager.snapshot(),model,identity:physicalRadioIdentified?'HN5RV01':null,protocolMock:null,protocolStatus:lastPhysicalProtocol
  }),radioEvents);
 }
 function refreshRadioDiagnostics(){
@@ -116,6 +117,7 @@ const connectionManager=new ConnectionManager({
     if(state!=='connected'||mode!=='usb'){
       physicalRadioIdentified=false;
       clearIdentifiedSession();
+      lastPhysicalProtocol='No radio operation yet';
     }
     updateConnectionIndicators({state,mode});
     if(usbDiagnosticsPanel.open)refreshUSBDiagnostics();
@@ -127,7 +129,7 @@ const connectionManager=new ConnectionManager({
     $('usb-disconnect').disabled=busy||state!=='connected'||mode!=='usb';
     $('connection-state').textContent=state==='connected'?'USB port connected':state;
     $('connection').textContent=state==='connected'
-      ?(physicalRadioIdentified?'UV-16 Pro V2 · firmware HN5RV01 identified after memory read.':'USB serial connected. Radio identity is not yet confirmed.')
+      ?(physicalRadioIdentified?'UV-16 Pro V2 · firmware HN5RV01 identified by read-only handshake.':'USB serial connected. Radio identity is not yet confirmed.')
       :'No radio connection. Hardware programming is not supported.';
     $('device-mode').textContent=mode==='usb'?'USB serial':'None';
     $('device-vendor').textContent=mode==='usb'?info.vendorId:'Unavailable';
@@ -154,12 +156,14 @@ document.addEventListener('click',async event=>{
     identifiedReadSession=session;
     const result=await session.identify();
     physicalRadioIdentified=true;
+    lastPhysicalProtocol='Read-only identification passed (HN5RV01)';
     updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
     addDiagnostic('Physical UV-16 identity verified: '+result.firmware+' (no channel read or write)');
     logRadioEvent('Read-only identity check complete: '+result.firmware);
   }catch(error){
     clearIdentifiedSession();
+    lastPhysicalProtocol='Identification failed: '+error.message;
     physicalRadioIdentified=false;updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='Radio identification failed: '+error.message+'. USB remains connected.';
     addDiagnostic('Physical radio identification failed: '+error.message);
@@ -208,6 +212,7 @@ radioRead.onclick=async()=>{
     physicalRadioIdentified=true;
     updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
+    lastPhysicalProtocol='Full 128-slot memory read completed';
     samplePreview.textContent=formatUV16Sample(result);
     addDiagnostic('UV-16 memory read complete: '+result.channels.length+' programmed frequencies found');
     logRadioEvent('UV-16 USB memory read complete: '+result.channels.length+' programmed channels');
@@ -233,7 +238,8 @@ radioRead.onclick=async()=>{
     clearIdentifiedSession();
     physicalRadioIdentified=false;
     updateConnectionIndicators(connectionManager.snapshot());
-    samplePreview.textContent='Read failed — '+(error.code==='TIMEOUT'?'radio did not respond':error.code==='BAD_ACK'?'radio handshake rejected':error.message)+'. No channel changes made. Power-cycle the radio and reconnect USB before retrying.';
+    lastPhysicalProtocol='Read failed: '+error.message;
+    samplePreview.textContent='Read failed — '+error.message+'. No channel changes made. Power-cycle the radio and reconnect USB before retrying.';
     addDiagnostic('UV-16 memory read failed: '+error.message);
     logRadioEvent('UV-16 read failed: '+error.message);
   }finally{
