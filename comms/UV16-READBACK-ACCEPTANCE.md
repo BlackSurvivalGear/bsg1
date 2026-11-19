@@ -3,7 +3,7 @@
 This is a **software-only comparison stage**, not a working hardware reader.
 
 ## Existing prerequisites
-- PR #44 contains a draft bounded receive-only Web Serial transport. It is not merged and cannot send radio commands.
+- PR #44 was merged into main. Its bounded receive-only Web Serial transport cannot send radio commands. It also includes an offline CHIRP-trace decoder for the six known factory frequencies; hardware read is still disabled.
 - BSG COMMS already imports CHIRP CSV into receive-only channels.
 - A successful BF-F8HP-labelled CHIRP export does **not** establish a UV-16 Pro V2 handshake, memory map, firmware compatibility or safe upload protocol.
 
@@ -13,8 +13,8 @@ This is a **software-only comparison stage**, not a working hardware reader.
 - Regression fixtures representing the six factory channel frequencies.
 
 ## Required hardware gate before a physical read button is enabled
-1. Obtain the exact UV-16 Pro V2 firmware identity and a redacted, owner-authorised CHIRP read trace for the connected equipment.
-2. Review command bytes, frame boundaries, ACK rules, memory block addressing and failure behaviour. Do not infer these from a related model.
+1. The owner-provided CHIRP trace reports firmware identifier `HN5RV01` and demonstrates an acknowledged BF-F8HP-labelled read. Independently verify the precise radio model/firmware before using this with BSG; the trace alone does not prove all firmware variants compatible.
+2. Complete the review of command bytes, frame boundaries, ACK rules, memory block addressing and failure behaviour using the captured session; do not infer unobserved behaviour from a related model.
 3. Implement an allowlisted read protocol and model-specific decoder on top of the receive-only transport. Reject any unexpected response or model fingerprint.
 4. Compare a decoded capture with the known six-memory CHIRP CSV using this helper; a match is necessary but **not sufficient** for protocol verification.
 5. Test cancellation, timeout, disconnect, invalid frame, wrong model and malformed channels; run an authorised read on hardware.
