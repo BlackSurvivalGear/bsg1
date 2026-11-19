@@ -1,6 +1,7 @@
 import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sdr.js';
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
+import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
 import {radioConnectionIndicators} from './radio-connection-indicators.js';
@@ -36,6 +37,9 @@ let virtualDriver=null;
 const simulatorIdentity=$('simulator-identity');
 const identityPreview=$('bff8hp-identification-preview');
 const simulatorRead=$('simulator-read');
+const sampleRead=$('uv16-read-sample');
+const samplePreview=$('uv16-read-preview');
+let sampleReading=false;
 const usbIndicator=$('usb-indicator');
 const radioIndicator=$('radio-indicator');
 function updateConnectionIndicators(snapshot){
@@ -106,6 +110,7 @@ const connectionManager=new ConnectionManager({
     if(radioDiagnosticsPanel.open)refreshRadioDiagnostics();
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
+    sampleRead.disabled=busy||sampleReading||state!=='connected'||mode!=='usb'||model!=='uv-16-pro-v2';
     identityPreview.disabled=busy||state==='connected';
     $('connect').disabled=busy||state==='connected';
     $('usb-test').disabled=busy||state==='connected';
@@ -189,6 +194,27 @@ simulatorRead.onclick=async()=>{
   }catch(e){addDiagnostic('Virtual memory read failed: '+e.message);alert(e.message);}
   finally{simulatorRead.disabled=connectionManager.mode!=='simulation'||connectionManager.state!=='connected';}
 };
+sampleRead.onclick=async()=>{
+  if(sampleReading||connectionManager.state!=='connected'||connectionManager.mode!=='usb'||model!=='uv-16-pro-v2')return;
+  if(!confirm('EXPERIMENTAL UV-16 READ: Send the captured identification and memory READ commands to the selected physical USB radio? No channel programming will be performed. Continue only with a UV-16 Pro V2 and an existing CHIRP backup.'))return;
+  sampleReading=true;sampleRead.disabled=true;
+  $('usb-disconnect').disabled=true;
+  samplePreview.textContent='Reading six sample memories from USB…';
+  try{
+    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true});
+    samplePreview.textContent=formatUV16Sample(result);
+    addDiagnostic('UV-16 experimental sample read returned six frequencies; hardware compatibility not yet independently verified');
+    logRadioEvent('Experimental UV-16 USB sample read completed; saved channel editor unchanged');
+  }catch(error){
+    samplePreview.textContent='UV-16 sample read failed: '+error.message+'. Disconnect and reconnect the USB cable before retrying.';
+    addDiagnostic('UV-16 sample read failed: '+error.message);
+    logRadioEvent('Experimental UV-16 read failed: '+error.message);
+  }finally{
+    sampleReading=false;
+    sampleRead.disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb'||model!=='uv-16-pro-v2';
+    $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+  }
+};
 $('usb-disconnect').onclick=async()=>{
   if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
   try{await connectionManager.disconnect();}
@@ -205,7 +231,7 @@ $('radio-disconnect').onclick=async()=>{
   }catch(e){alert('Radio disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');
-addDiagnostic('Diagnostics ready. No radio read/write commands are available.');
+addDiagnostic('Diagnostics ready. Only confirmed UV-16 USB sample reads can send limited radio read commands; radio writes remain disabled.');
 
 
 
