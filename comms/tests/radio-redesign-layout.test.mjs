@@ -112,3 +112,26 @@ test('selecting radios refreshes their own image and only UV-16 receives read wo
  const cutout=readFileSync(new URL('../radio-photo-cutout.js',import.meta.url),'utf8');
  assert.ok(cutout.includes("img.dataset.model!=='uv-16-pro-v2'"));
 });
+
+test('select-first hero orders radio selection and status before action and photo',()=>{
+ assert.ok(js.includes("hero.append(status,centre,photo)"));
+ assert.ok(js.includes("status.append(heading)"));
+ assert.ok(js.includes("status.append(statusLabel,connection,portLine,fwLine)"));
+ assert.ok(js.includes("heading.textContent='Select Radio'"));
+ assert.ok(js.includes("statusLabel.textContent='Radio Status'"));
+ assert.ok(js.includes("title.textContent='Radio Control'"));
+ assert.ok(!js.includes('modelValue.textContent=title.textContent'));
+ assert.ok(css.includes('grid-template-columns:minmax(245px,305px) minmax(300px,1fr) minmax(170px,245px)'));
+ assert.ok(css.includes('.rm-status{grid-column:1;grid-row:1'));
+ assert.ok(css.includes('.rm-main{grid-column:2;grid-row:1'));
+ assert.ok(css.includes('.rm-photo{\n  grid-column:3;grid-row:1'));
+});
+test('mobile order and interactive radio controls survive layout-only change',()=>{
+ assert.ok(css.includes('.rm-main{grid-column:1;grid-row:2'));
+ assert.ok(css.includes('.rm-photo{grid-column:1;grid-row:3'));
+ assert.ok(js.includes("primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();}"));
+ assert.ok(js.includes("modelSelector?.addEventListener('change',refreshRadioImage)"));
+ assert.ok(js.includes("identifyButton.hidden=!connected||identified||!supportsPhysicalRead"));
+ assert.ok(js.includes('centre.append(read,readHint)'));
+ assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
+});
