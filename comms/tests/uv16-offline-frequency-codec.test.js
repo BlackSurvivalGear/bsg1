@@ -47,7 +47,7 @@ test('single-channel RX change touches only BCD bytes and leaves auxiliary evide
  const before=JSON.stringify(snapshot);
  const diff=prepareUV16OfflineFrequencyDiff({snapshot,slot:2,
   expectedRxMHz:145.5,expectedTxMHz:145.5,newRxMHz:145.225,newTxMHz:145.5});
- assert.deepEqual(diff.changedOffsets,[33,34,35]); // inspect byte-by-byte
+ assert.deepEqual(diff.changedOffsets,[33,34]); // only the two changed BCD bytes
  assert.equal(diff.beforeRecordHex.slice(16),diff.afterRecordHex.slice(16));
  assert.equal(diff.afterRecordHex.slice(8,16),diff.beforeRecordHex.slice(8,16));
  assert.equal(diff.afterRecordHex.slice(16),diff.beforeRecordHex.slice(16));
