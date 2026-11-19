@@ -25,7 +25,7 @@ function freq(raw){
 }
 const abortCheck=signal=>{if(signal?.aborted)fail('Cancelled','ABORTED');};
 export class UV16ReadOnlySession {
-  #port; #rx; #used=false; #closed=false;
+  #port; #rx; #used=false; #closed=false; #identified=false; #completed=false;
   constructor({port,timeoutMs=2000}={}){
     if(!port?.readable?.getReader||!port?.writable?.getWriter)fail('Open serial port required','PORT_UNAVAILABLE');
     this.#port=port;
@@ -70,14 +70,18 @@ export class UV16ReadOnlySession {
       const block=await this.#readBlock(0x1ec0,signal);
       const firmware=String.fromCharCode(...block.slice(48,55));
       if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
+      this.#identified=true;
       return Object.freeze({firmware,model:'uv-16-pro-v2',readOnly:true,hardwareVerified:false});
-    }finally{this.close();}
+    }catch(error){this.close();throw error;}
   }
   async readMemory({signal,onProgress}={}){
-    if(this.#used)fail('Session already used','SESSION_USED');
-    this.#used=true;
+    if(this.#completed||this.#closed)fail('Session already used','SESSION_USED');
+    if(this.#used&&!this.#identified)fail('Session already used','SESSION_USED');
+    this.#used=true;this.#completed=true;
     try{
-      await this.#identifyHandshake(signal);
+      // A successful standalone Identify leaves the radio in programming mode.
+      // Reuse that session; sending MAGIC a second time can be rejected by real hardware.
+      if(!this.#identified)await this.#identifyHandshake(signal);
       for(const address of AUX){
         const block=await this.#readBlock(address,signal);
         if(address===0x1ec0){
