@@ -20,7 +20,7 @@ const topbar=document.createElement('div');topbar.className='workspace-topbar';
 const menu=document.createElement('button');menu.type='button';menu.className='mobile-menu';menu.textContent='☰ Menu';menu.setAttribute('aria-controls','app-sidebar');menu.setAttribute('aria-expanded','false');topbar.append(menu);
 const heading=document.createElement('div');heading.className='workspace-heading';
 const title=document.createElement('h2');title.id='workspace-title';const subtitle=document.createElement('p');subtitle.id='workspace-description';heading.append(title,subtitle);topbar.append(heading);
-const chip=document.createElement('span');chip.className='workspace-chip';chip.textContent='READ / WRITE UNAVAILABLE';topbar.append(chip);
+const chip=document.createElement('span');chip.className='workspace-chip';chip.textContent='READ AVAILABLE · WRITE LOCKED';topbar.append(chip);
 content.append(topbar);
 const pages=document.createElement('div');pages.className='workspace-pages';content.append(pages);
 const views=new Map();
