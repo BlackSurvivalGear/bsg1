@@ -124,21 +124,61 @@ snapshotExport.onclick=()=>{
   'application/json');
 };
 let currentGuardCapture=null;
+let currentFullMainCapture=null;
+const fullRead=$('uv16-full-read'),fullExport=$('uv16-full-export');
 let guardReading=false;
 const guardRead=$('uv16-guard-read'),guardExport=$('uv16-guard-export');
 const guardImage=$('uv16-guard-image'),guardCompare=$('uv16-guard-compare'),guardStatus=$('uv16-guard-status');
 function clearGuardCapture(){
  currentGuardCapture=null;
+ currentFullMainCapture=null;
+ fullExport.disabled=true;
  guardExport.disabled=true;
  guardCompare.disabled=true;
  guardStatus.textContent='No guard capture. Write and Verify remain disabled.';
 }
 function refreshGuardControls(){
  guardRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ fullRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ fullExport.disabled=sampleReading||guardReading||!currentFullMainCapture;
  guardCompare.disabled=guardReading||sampleReading||!currentGuardCapture||!guardImage.files?.length;
  guardExport.disabled=!currentGuardCapture||guardReading||sampleReading;
 }
 guardImage.onchange=()=>refreshGuardControls();
+fullExport.onclick=()=>{
+ if(!currentFullMainCapture)return;
+ download('bsg-uv16-hn5rv01-full-read-evidence.json',
+  JSON.stringify({...currentFullMainCapture,capturedAt:new Date().toISOString()},null,2),'application/json');
+};
+fullRead.onclick=async()=>{
+ if(guardReading||sampleReading||!canReadSelectedRadio())return;
+ if(!confirm('Read 96 main-memory blocks and 6 auxiliary blocks (READ ONLY)? No radio write. Capture is evidence, NOT a tested recovery backup.'))return;
+ clearGuardCapture();
+ guardReading=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Reading all 6144 main bytes and six auxiliary blocks…';
+ try{
+  const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+   captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
+  currentFullMainCapture=result.fullMainCapture;
+  currentGuardCapture=result.chirpGuardCapture;
+  currentReadSnapshot=result.rawSnapshot;
+  snapshotExport.disabled=false;
+  physicalRadioIdentified=true;
+  updateConnectionIndicators(connectionManager.snapshot());
+  lastPhysicalProtocol='Complete read-only main-memory capture';
+  guardStatus.textContent='Full read complete: 6144 main bytes and five stored auxiliary blocks. Export Full Read JSON. Write remains BLOCKED; not a restorable backup.';
+  addDiagnostic('UV-16 full main-memory read-only capture complete');
+  logRadioEvent('UV-16 6144-byte full main capture complete; no radio changes');
+ }catch(error){
+  clearGuardCapture();clearReadSnapshot();
+  guardStatus.textContent='Full read failed: '+error.message+'. No partial capture accepted. Reconnect before retry.';
+  addDiagnostic('UV-16 full main-memory capture failed: '+error.message);
+ }finally{
+  guardReading=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
 guardExport.onclick=()=>{
  if(!currentGuardCapture)return;
  download('bsg-uv16-hn5rv01-chirp-guard.json',
