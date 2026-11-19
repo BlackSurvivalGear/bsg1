@@ -210,3 +210,19 @@ test('diagnostics show centered paired reports with one copy action and preserve
  assert.ok(app.includes("usbRefresh.onclick=refreshUSBDiagnostics"));
  assert.ok(app.includes("$('radio-refresh').onclick=refreshRadioDiagnostics"));
 });
+
+test('offline write preparation remains separate from the locked hardware write and verify controls',()=>{
+ assert.ok(html.includes('id="prepare-uv16-write"'));
+ assert.ok(html.includes('id="uv16-write-preparation-result" role="status" aria-live="polite" hidden'));
+ for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+ assert.ok(app.includes("import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js'"));
+ assert.ok(app.includes("writePreparationButton.onclick=()=>"));
+ assert.ok(app.includes("download('bsg-comms-uv16-editor-before-write.json'"));
+ const dryRun=readFileSync(new URL('../uv16-write-preparation.js',import.meta.url),'utf8');
+ assert.ok(dryRun.includes('readyForHardware:false,writeEnabled:false'));
+ assert.ok(dryRun.includes('radioMemorySlot:null'));
+ assert.ok(dryRun.includes('rawMemoryBackupAvailable:false,firmwareMatchedEncoderVerified:false'));
+ assert.ok(!dryRun.includes('getWriter('));
+ assert.ok(!dryRun.includes('0x57'));
+});
