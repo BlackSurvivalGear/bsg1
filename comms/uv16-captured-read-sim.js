@@ -21,7 +21,6 @@ export class OfflineCapturedPeer{
   if(equal(a,MAGIC)&&expected===1)return Uint8Array.of(6);
   if(equal(a,[2])&&expected===8)return Uint8Array.from([0xaa,0x30,0x76,4,0,5,0x20,0xdd]);
   if(equal(a,[6])&&expected===1)return Uint8Array.of(6);
-  if(equal(a,[0x53,0x1e,0xc0,0x40])&&expected===1)return Uint8Array.of(6);
   if(equal(a,[6])&&expected===68&&this.auxiliary){
     this.auxiliary=false;
     const v=new Uint8Array(68).fill(0xff);v.set([0x58,0x1e,0xc0,0x40]);v.set(MARKER,52);return v;
