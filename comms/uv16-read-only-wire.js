@@ -1,6 +1,7 @@
 // Evidence-bounded UV-16 / HN5RV01 read-only memory transfer.
 // Reads 128 documented 16-byte memory locations in 64-byte blocks; no write/erase opcode.
 import {SerialByteTransport} from './serial-byte-transport.js';
+import {captureUV16ReadRegions} from './uv16-read-regions.js';
 export class UV16ReadError extends Error {
   constructor(message,code='READ_FAILED'){super(message);this.name='UV16ReadError';this.code=code;}
 }
@@ -53,7 +54,7 @@ export class UV16ReadOnlySession {
     await this.#command([6],signal);
     return block;
   }
-  async readMemory({signal,onProgress}={}){
+  async readMemory({signal,onProgress,captureRaw=false}={}){
     if(this.#used)fail('Session already used','SESSION_USED');
     this.#used=true;
     try{
@@ -63,8 +64,10 @@ export class UV16ReadOnlySession {
       if(!same([...await this.#receive(8,signal)],ID))fail('Unexpected identity','WRONG_IDENTITY');
       await this.#command([6],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Identity ACK rejected','BAD_ACK');
+      const auxiliary=captureRaw?new Map():null;
       for(const address of AUX){
         const block=await this.#readBlock(address,signal);
+        if(auxiliary)auxiliary.set(address,block);
         if(address===0x1ec0){
           const firmware=String.fromCharCode(...block.slice(48,55));
           if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
@@ -84,7 +87,9 @@ export class UV16ReadOnlySession {
         if(memory[0]===0xff)continue;
         channels.push({slot,rx:freq(memory.slice(0,4)),tx:freq(memory.slice(4,8))});
       }
-      return {firmware:'HN5RV01',channels,capacity:UV16_MEMORY_SLOTS,readOnly:true,hardwareVerified:false};
+      // Capture only after the complete, validated read. No additional radio commands.
+      const rawSnapshot=captureRaw?captureUV16ReadRegions({firmware:'HN5RV01',channelBytes:raw,auxiliary}):null;
+      return {firmware:'HN5RV01',channels,capacity:UV16_MEMORY_SLOTS,readOnly:true,hardwareVerified:false,rawSnapshot};
     }finally{this.close();}
   }
 }
