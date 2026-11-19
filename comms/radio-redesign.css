@@ -1,0 +1,46 @@
+/* Approved physical Radio Manager — isolated from the existing sidebar and other workspaces. */
+.workspace-view.approved-radio-manager{display:flex;flex-direction:column;gap:16px}
+.workspace-view.approved-radio-manager[hidden]{display:none}
+.approved-radio-manager .rm-steps{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:4px 0 2px}
+.approved-radio-manager .rm-step{min-width:0;flex:1;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #426d46;background:#13271a;color:#b1c3b1;border-radius:12px;padding:14px 10px;font-size:.92rem;font-weight:700}
+.approved-radio-manager .rm-step.is-complete{color:#d8f9df;border-color:#42b96d;background:#1b4628}
+.approved-radio-manager .rm-step.is-locked{color:#9ba9a0;border-color:#46534a;background:#1a221e}
+.approved-radio-manager .rm-step-number{display:grid;place-items:center;border:1px solid currentColor;border-radius:50%;width:27px;height:27px;flex-shrink:0}
+.approved-radio-manager .rm-hero{display:grid;grid-template-columns:minmax(145px,230px) minmax(230px,1fr) minmax(220px,315px);gap:26px;align-items:center;padding:23px;border:1px solid #466949;border-radius:15px;background:radial-gradient(ellipse at 32% 48%,#173f24 0%,#0b1b11 62%,#101e14 100%)}
+.approved-radio-manager .rm-photo{height:230px;display:grid;place-items:center;overflow:hidden}
+.approved-radio-manager .rm-photo img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 14px 20px #0009)}
+.approved-radio-manager .rm-main{min-width:0;display:flex;flex-direction:column;gap:11px}
+.approved-radio-manager .rm-model{font-size:1.55rem;line-height:1.2;margin:0}
+.approved-radio-manager .rm-firmware{color:#c9dcca;margin:0;font-size:.94rem}
+.approved-radio-manager .rm-read-hint{font-size:.8rem;color:#adbfae;margin:0}
+.approved-radio-manager #radio-read{font-size:1.18rem;min-height:62px;background:linear-gradient(130deg,#228346,#126c38);border:2px solid #65de86;box-shadow:0 6px 20px #071a0a8c}
+.approved-radio-manager #radio-read:disabled{opacity:.55;box-shadow:none}
+.approved-radio-manager .rm-status{border:1px solid #456c48;border-radius:13px;padding:16px;background:#112719;min-width:0}
+.approved-radio-manager .rm-status h3{margin:0 0 14px;font-size:1.08rem}
+.approved-radio-manager .rm-live-state{font-size:.92rem;color:#b4c3b7;margin:0 0 13px}
+.approved-radio-manager .rm-live-state.is-identified{color:#63e58d;font-weight:700}
+.approved-radio-manager .rm-status-line{display:flex;gap:10px;justify-content:space-between;padding:9px 0;border-top:1px solid #304936;font-size:.84rem}
+.approved-radio-manager .rm-status-line strong{font-weight:650;text-align:right;overflow-wrap:anywhere}
+.approved-radio-manager .rm-model-picker{display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid #304936;margin-top:5px;padding-top:11px;font-size:.77rem}
+.approved-radio-manager .rm-model-picker select{max-width:175px;min-width:0}
+.approved-radio-manager .rm-actions{display:grid;grid-template-columns:1.2fr .8fr 1fr 1fr 1fr;gap:12px}
+.approved-radio-manager .rm-action{min-width:0;min-height:52px;font-size:.95rem;font-weight:800;border-radius:10px}
+.approved-radio-manager .rm-connect{background:#166b34;border:2px solid #49d16e}
+.approved-radio-manager .rm-disconnect{background:#213b28;border:1px solid #6b996d}
+.approved-radio-manager .rm-write:disabled{background:#4c3d17;border:2px solid #bc9a34;color:#eed287;opacity:.66}
+.approved-radio-manager .rm-verify:disabled{background:#203346;border:2px solid #567c9d;color:#bbd3e8;opacity:.66}
+.approved-radio-manager .rm-backup{background:#1b2f23;border:1px solid #79947d}
+.approved-radio-manager .rm-advanced{border:1px solid #3c5b44;border-radius:10px;background:#0e1c12}
+.approved-radio-manager .rm-advanced>summary{cursor:pointer;padding:12px 16px;color:#b6cbb9;font-size:.86rem}
+.approved-radio-manager .rm-advanced>.radio-console{border:0;margin:0;border-radius:0}
+.approved-radio-manager .rm-advanced .radio-control-column{min-height:0!important}
+.approved-radio-manager .radio-editor-card{border-color:#967b35;padding:22px;background:linear-gradient(150deg,#14281a,#0c1b12)}
+.approved-radio-manager .radio-editor-heading .toolbar{display:flex!important;align-items:center;justify-content:space-between;gap:14px}
+.approved-radio-manager .radio-editor-heading h2{grid-column:auto!important;font-size:1.4rem}
+.approved-radio-manager .rm-search{min-width:200px;max-width:260px;background:#0d1e13;color:#f2f5ef;border:1px solid #64855f;border-radius:9px;padding:11px}
+.approved-radio-manager .radio-editor-program-actions{display:none!important}
+.approved-radio-manager #uv16-read-preview{color:#cdeed3;font-size:.88rem}
+.approved-radio-manager .radio-editor-description{font-size:.78rem}
+.approved-radio-manager .radio-editor-file-actions{margin-top:14px}
+@media(max-width:1100px){.approved-radio-manager .rm-hero{grid-template-columns:145px 1fr}.approved-radio-manager .rm-status{grid-column:1/-1}.approved-radio-manager .rm-steps{flex-wrap:wrap}.approved-radio-manager .rm-step{flex-basis:30%}}
+@media(max-width:700px){.approved-radio-manager .rm-hero{grid-template-columns:1fr;text-align:left}.approved-radio-manager .rm-photo{height:175px}.approved-radio-manager .rm-status{grid-column:auto}.approved-radio-manager .rm-actions{grid-template-columns:1fr 1fr}.approved-radio-manager .rm-step{flex-basis:43%}.approved-radio-manager .rm-search{min-width:0;width:100%}}
