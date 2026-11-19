@@ -58,15 +58,21 @@ export function decodeKnownUV16Memories(trace,{count=6}={}){
   const memory=new Uint8Array(128);
   memory.set(blocks.get(0),0);memory.set(blocks.get(0x40),64);
   const channels=[];
-  for(let slot=0;slot<count;slot++){
+  // Four 16-byte records live in each 64-byte block. Empty memory
+  // locations can occur between programmed channels; do not shift
+  // physical slot numbers to manufacture contiguous addresses.
+  for(let slot=0;slot<memory.length/16&&channels.length<count;slot++){
     const offset=slot*16;
     const raw=memory.slice(offset,offset+16);
-    if(raw.every(b=>b===0xff))reject('Empty reference memory at slot '+slot,'EMPTY_MEMORY');
+    // The captured CHIRP image uses 0xff in the first RX byte for
+    // unprogrammed slots, including partly initialised records.
+    if(raw[0]===0xff)continue;
     const rx=toFrequency(raw.slice(0,4));
     const tx=toFrequency(raw.slice(4,8));
     // Mode byte interpretation is not yet independently validated;
     // do not infer FM/NFM or tone settings from this trace.
     channels.push({slot,rx,tx,rawHex:[...raw].map(b=>b.toString(16).padStart(2,'0')).join(' ')});
   }
+  if(channels.length!==count)reject('Insufficient populated reference memories','EMPTY_MEMORY');
   return {firmware:'HN5RV01',source:'CHIRP trace (offline only)',channels};
 }
