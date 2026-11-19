@@ -4,6 +4,8 @@
 export function prepareUV16Cutout(img){
   if(!img||img.dataset.cutoutReady==='true')return;
   const process=()=>{
+    // Ignore an old UV-16 load listener if the user has switched to another model.
+    if(img.dataset.model&&img.dataset.model!=='uv-16-pro-v2')return;
     if(img.dataset.cutoutReady==='true'||!img.naturalWidth||!img.naturalHeight)return;
     img.dataset.cutoutReady='true';
     try{

@@ -1,4 +1,5 @@
 import {prepareUV16Cutout} from './radio-photo-cutout.js';
+import {MODELS} from './models.js';
 // Approved Radio Manager presentation. Reuses the existing connected USB and editor controls.
 // The workspace sidebar, serial protocol and channel persistence remain unchanged.
 const $=id=>document.getElementById(id);
@@ -16,9 +17,23 @@ if(page&&original&&editor){
  }
  const hero=document.createElement('section');hero.className='rm-hero';hero.setAttribute('aria-label','Physical radio');
  const photo=document.createElement('div');photo.className='rm-photo';
- const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.decoding='async';img.onerror=()=>{img.hidden=true;};
+ const img=document.createElement('img');img.alt='Selected Baofeng radio';img.loading='lazy';img.decoding='async';img.onerror=()=>{img.hidden=true;};
  photo.append(img);
- prepareUV16Cutout(img);
+ const modelSelector=$('radio-model');
+ function refreshRadioImage(){
+   const current=MODELS.find(item=>item.id===modelSelector?.value);
+   if(!current||img.dataset.model===current.id)return;
+   img.dataset.model=current.id;
+   img.hidden=false;
+   img.alt=current.name+' radio';
+   delete img.dataset.cutoutReady;
+   img.src=current.image;
+   // The UV-16's original white-backed photo needs cutout processing.
+   // New UV-32 / UV-5R images are displayed as supplied, without applying UV-16 processing.
+   if(current.id==='uv-16-pro-v2')prepareUV16Cutout(img);
+ }
+ refreshRadioImage();
+ modelSelector?.addEventListener('change',refreshRadioImage);
  const centre=document.createElement('div');centre.className='rm-main';
  const title=document.createElement('h2');title.className='rm-model';title.textContent=$('model-name')?.textContent||'Radio Manager';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
@@ -83,24 +98,29 @@ if(page&&original&&editor){
  const observer=new MutationObserver(()=>{if(search.value)search.dispatchEvent(new Event('input'));});
  observer.observe(table,{childList:true});
  function refresh(){
+  refreshRadioImage();
+  const selectedModel=MODELS.find(item=>item.id===modelSelector?.value);
+  const supportsPhysicalRead=selectedModel?.physicalRead===true;
   const connected=$('usb-indicator')?.dataset.state==='connected';
-  const identified=$('radio-indicator')?.dataset.state==='connected';
+  const identified=supportsPhysicalRead&&$('radio-indicator')?.dataset.state==='connected';
   title.textContent=$('model-name')?.textContent||'Radio Manager';
   modelValue.textContent=title.textContent;
   portValue.textContent=connected?'USB serial connected':'Disconnected';
-  fwValue.textContent=identified?'HN5RV01':'Not identified';
-  firmware.textContent=identified?'Firmware HN5RV01':'Firmware not yet identified';
-  connection.textContent=identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
+  fwValue.textContent=!supportsPhysicalRead?'Unsupported':identified?'HN5RV01':'Not identified';
+  firmware.textContent=!supportsPhysicalRead?'Physical radio protocol not yet supported':identified?'Firmware HN5RV01':'Firmware not yet identified';
+  connection.textContent=!supportsPhysicalRead?'Model preview only — physical read unavailable':identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
   // Exactly one primary action is visible. Never present Read before firmware identification.
   primaryConnect.hidden=connected;
-  identifyButton.hidden=!connected||identified;
-  read.hidden=!identified;
-  primaryConnect.disabled=connect.disabled;
-  identifyButton.disabled=!connected||read.disabled;
+  identifyButton.hidden=!connected||identified||!supportsPhysicalRead;
+  read.hidden=!identified||!supportsPhysicalRead;
+  primaryConnect.textContent=supportsPhysicalRead?'Connect Radio':'Physical read not yet supported';
+  primaryConnect.disabled=connect.disabled||!supportsPhysicalRead;
+  identifyButton.disabled=!connected||read.disabled||!supportsPhysicalRead;
   if(!identifyButton.disabled)identifyButton.textContent='Identify Radio';
-  readHint.textContent=!connected?'Connect the physical radio using its USB programming cable.'
-   :!identified?'Identify the radio and verify firmware HN5RV01 before reading memories.'
+  readHint.textContent=!supportsPhysicalRead?'UV-32 and UV-5R physical identification and memory reading are not yet implemented.'
+   :!connected?'Connect the physical radio using its USB programming cable.'
+   :!identified?'Identify the UV-16 and verify firmware HN5RV01 before reading memories.'
    :'Read the radio’s programmed channels from the physical device.';
   for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
