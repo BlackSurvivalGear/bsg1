@@ -6,6 +6,7 @@ import {validateUV16ReadRegions} from './uv16-read-regions.js';
 import {compareBFF8HPCHIRPGuard} from './uv16-chirp-guard-comparison.js';
 import {inspectUV16Slot} from './uv16-offline-frequency-codec.js';
 import {writeUV16OneChannel,prepareUV16HardwareChange,compareUV16HardwareReadback} from './uv16-hardware-write.js';
+import {eligibleUV16WriteSession,freshUV16WriteSessionMessage} from './uv16-write-session-gate.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
@@ -51,6 +52,8 @@ snapshotExport.onclick=()=>{
 let currentGuardCapture=null;
 let currentFullMainCapture=null;
 let radioBackupExported=false;
+let connectionEpoch=0;
+let fullReadEpoch=null;
 let pendingHardwarePlan=null;
 let hardwareBusy=false;
 const liveSlot=$('uv16-live-slot'),liveRx=$('uv16-live-rx'),liveTx=$('uv16-live-tx');
@@ -74,8 +77,9 @@ function refreshWriteControls(){
  const available=connectionManager.state==='connected'&&connectionManager.mode==='usb'&&model==='uv-16-pro-v2';
  liveSlot.disabled=!available||!currentFullMainCapture||!!pendingHardwarePlan||hardwareBusy;
  liveRx.disabled=liveSlot.disabled||liveSlot.value==='';
- realWrite.disabled=!available||!currentFullMainCapture||!radioBackupExported||
-  !!pendingHardwarePlan||hardwareBusy||liveSlot.value===''||liveRx.value==='';
+ realWrite.disabled=!currentFullMainCapture||hardwareBusy||liveSlot.value===''||liveRx.value===''||
+  !eligibleUV16WriteSession({connectionEpoch,fullReadEpoch,backupSaved:radioBackupExported,
+    connected:available,writePending:!!pendingHardwarePlan});
  realVerify.disabled=!available||!pendingHardwarePlan||hardwareBusy;
 }
 liveSlot.onchange=()=>{
@@ -97,6 +101,7 @@ const guardImage=$('uv16-guard-image'),guardCompare=$('uv16-guard-compare'),guar
 function clearGuardCapture(){
  currentGuardCapture=null;
  currentFullMainCapture=null;
+ fullReadEpoch=null;
  radioBackupExported=false;
  populateLiveSlots();
  refreshWriteControls();
@@ -131,6 +136,7 @@ fullRead.onclick=async()=>{
   const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
    captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
   currentFullMainCapture=result.fullMainCapture;
+  fullReadEpoch=connectionEpoch;
   populateLiveSlots();
   currentGuardCapture=result.chirpGuardCapture;
   currentReadSnapshot=result.rawSnapshot;
@@ -138,7 +144,7 @@ fullRead.onclick=async()=>{
   physicalRadioIdentified=true;
   updateConnectionIndicators(connectionManager.snapshot());
   lastPhysicalProtocol='Complete read-only main-memory capture';
-  guardStatus.textContent='Full read complete: 6144 main bytes. Save Radio Backup Evidence, select one memory and change RX frequency. This experimental write risks disabling the test radio.';
+  guardStatus.textContent='Full read complete: 6144 main bytes. Save Radio Backup Evidence, then disconnect USB, switch this test radio OFF and ON, reconnect USB, and select a memory. Only a fresh session may write.';
   addDiagnostic('UV-16 full main-memory read-only capture complete');
   logRadioEvent('UV-16 6144-byte full main capture complete; no radio changes');
  }catch(error){
@@ -199,8 +205,11 @@ guardRead.onclick=async()=>{
  }
 };
 realWrite.onclick=async()=>{
- if(hardwareBusy||pendingHardwarePlan||!currentFullMainCapture||!radioBackupExported||
-    !canReadSelectedRadio()||liveSlot.value==='')return;
+ if(hardwareBusy||pendingHardwarePlan||!currentFullMainCapture||liveSlot.value==='')return;
+ const eligible=eligibleUV16WriteSession({connectionEpoch,fullReadEpoch,
+  backupSaved:radioBackupExported,connected:canReadSelectedRadio(),writePending:!!pendingHardwarePlan});
+ if(!eligible){guardStatus.textContent=freshUV16WriteSessionMessage({connectionEpoch,fullReadEpoch,
+  backupSaved:radioBackupExported,connected:canReadSelectedRadio(),writePending:!!pendingHardwarePlan});return;}
  let plan;
  try{plan=prepareUV16HardwareChange({capture:currentFullMainCapture,
     slot:Number(liveSlot.value),newRxMHz:Number(liveRx.value)});}
@@ -208,6 +217,7 @@ realWrite.onclick=async()=>{
  const message='PHYSICAL RADIO WRITE — DESIGNATED TEST UV-16 ONLY.\\nMemory M'+
   (plan.slot+1)+' RX '+plan.oldRxMHz+' → '+plan.newRxMHz+' MHz. TX remains '+plan.txMHz+
   ' MHz.\\nHN5RV01 write has never been proven; this may disable your test radio. Recovery is not verified.\\nType WRITE to authorise ONE hardware block.';
+ if(!confirm('Confirm: You have disconnected USB, switched the SAME test UV-16 OFF and ON since the completed full read, and reconnected USB. The website cannot detect a physical power cycle.'))return;
  if(prompt(message)!=='WRITE')return;
  if(!confirm('LAST CONFIRMATION: Send ONE real 16-byte memory write to the attached UV-16?'))return;
  pendingHardwarePlan=plan;
@@ -349,7 +359,12 @@ function addDiagnostic(message){
 const connectionManager=new ConnectionManager({
   serial:navigator.serial??null,
   onChange:({state,mode,info,baudRate})=>{
+    if(state==='connected'&&mode==='usb'&&connectionManager.state==='connected'&&!connectionManager._connectionEpochCounted){
+      connectionEpoch++;
+      connectionManager._connectionEpochCounted=true;
+    }
     if(state!=='connected'||mode!=='usb'){
+      connectionManager._connectionEpochCounted=false;
       physicalRadioIdentified=false;
       lastPhysicalProtocol='No radio operation yet';
     }
@@ -454,7 +469,7 @@ $('usb-disconnect').onclick=async()=>{
   try{await connectionManager.disconnect();clearReadSnapshot();
     // Keep exported full-memory baseline across a power cycle for guarded write/verify.
     guardStatus.textContent=pendingHardwarePlan?'Reconnect the test UV-16 and select Verify Write. Do not repeat the write.':
-      currentFullMainCapture?'Full radio capture retained. Reconnect the SAME test radio to continue programming.':'Connect the test radio and select Read Full Radio.';}
+      currentFullMainCapture?'Full capture retained. Switch the SAME test UV-16 OFF and ON, reconnect USB, then select a memory and prepare the write. Do not repeat Full Read.':'Connect the test radio and select Read Full Radio.';}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');
