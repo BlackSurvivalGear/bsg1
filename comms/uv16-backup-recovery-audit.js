@@ -31,8 +31,10 @@ export function simulateUV16MockRecovery({baseline,target,failAt=0}={}){
  const mock=createUV16MockRadio({memory:baseline,interruptAt:failAt});
  const upload=simulateCHIRPUpload({before:baseline,after:target,simulator:mock});
  const afterFailure=mock.snapshot();
- // Recovery is deliberately a fresh, local in-memory simulator. No restoration frames.
- const restored=baseline.slice();
+ // Restore the partially changed synthetic state with a second mock transfer.
+ const restoreMock=createUV16MockRadio({memory:afterFailure});
+ const restoreReport=equal(afterFailure,baseline)?null:simulateCHIRPUpload({before:afterFailure,after:baseline,simulator:restoreMock});
+ const restored=restoreMock.snapshot();
  return Object.freeze({
   format:UV16_RECOVERY_AUDIT_FORMAT,kind:'OFFLINE_RECOVERY_SIMULATION_ONLY',
   uploadStopped:upload.stopped,uploadError:upload.error,
