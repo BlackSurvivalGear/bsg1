@@ -1,0 +1,7 @@
+# UV-16 HN5RV01 — full read-only capture
+
+Purpose: collect substantially more evidence for the designated test unit **without transmitting a write**. The existing 2048-byte capture plus three CHIRP guard blocks is incomplete for full-radio recovery. An opt-in **Capture Full Read (Read Only)** operation now reuses the known read opcode to request all 96 64-byte blocks in the main radio range `0x0000–0x17FF`, plus the six read requests at `0x1E80`, `0x1EC0`, `0x1F00`, `0x1F40`, `0x1F80`, `0x1FC0`. Five auxiliary blocks (`0x1EC0–0x1FFF`) are retained. It then exports a local JSON evidence file.
+
+The radio has not yet physically demonstrated successful reads beyond `0x07FF` via this app; the optional expanded read might be refused and will fail closed. Nothing is written. Existing read button and guard capture remain unchanged. The exported evidence is **not a restorable firmware or settings backup**: no HN5RV01 write/restore procedure, erase/commit protocol, fallback bootloader or interrupted-write recovery has been demonstrated. A successfully completed capture can support a later verification plan; it is not permission to write. Captured raw memory should remain private and must not be committed to the public repository.
+
+To use after separately authorised deployment: connect the designated test UV-16, perform a fresh single-session Full Read before other radio reads, export JSON, and compare to the previous CHIRP image. Physical Write and Verify remain disabled.

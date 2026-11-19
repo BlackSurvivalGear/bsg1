@@ -79,3 +79,25 @@ test('website adapter rejects incomplete CHIRP guard capture without accepting e
  await assert.rejects(readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',captureCHIRPGuard:true,
   Session:class{async readMemory(){throw Error('Must not read');}}}),/requires a raw snapshot/);
 });
+
+test('website accepts consistent complete full evidence and passes opt-in flag',async()=>{
+ const memory=new Uint8Array(6144).fill(255);
+ const aux=new Map([0x1e80,0x1ec0,0x1fc0].map(address=>[address,new Uint8Array(64)]));
+ const rawSnapshot=captureUV16ReadRegions({firmware:'HN5RV01',channelBytes:memory.slice(0,2048),auxiliary:aux});
+ const guard=[0x1f00,0x1f40,0x1f80].map(address=>({address,bytesHex:'00'.repeat(64)}));
+ const chirpGuardCapture={format:'bsg-uv16-chirp-guard-capture-v1',firmware:'HN5RV01',readOnly:true,restorable:false,regions:guard};
+ const fullMainCapture={format:'bsg-uv16-full-main-read-v1',firmware:'HN5RV01',readOnly:true,restorable:false,
+  main:{start:0,length:6144,bytesHex:'ff'.repeat(6144)},
+  auxiliary:[0x1ec0,0x1f00,0x1f40,0x1f80,0x1fc0].map(address=>({address,bytesHex:'00'.repeat(64)}))};
+ const args={consent:true,connection,model:'uv-16-pro-v2',captureRaw:true,captureCHIRPGuard:true,captureFullMain:true};
+ const Session=class{async readMemory(options){assert.equal(options.captureFullMain,true);return {...sample,rawSnapshot,chirpGuardCapture,fullMainCapture};}};
+ const result=await readUV16WebsiteSample({...args,Session});
+ assert.equal(result.fullMainCapture,fullMainCapture);
+ const inconsistent={...fullMainCapture,main:{...fullMainCapture.main,bytesHex:'00'+'ff'.repeat(6143)}};
+ await assert.rejects(readUV16WebsiteSample({...args,Session:class{async readMemory(){return {...sample,rawSnapshot,chirpGuardCapture,fullMainCapture:inconsistent};}}}),/disagrees/);
+ await assert.rejects(readUV16WebsiteSample({...args,Session:class{async readMemory(){return {...sample,rawSnapshot,chirpGuardCapture};}}}),/Incomplete full main/);
+});
+test('website rejects invalid full capture flags before starting a read',async()=>{
+ await assert.rejects(readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',captureFullMain:true,
+  Session:class{constructor(){throw Error('Should not instantiate');}}}),/requires raw snapshot/);
+});
