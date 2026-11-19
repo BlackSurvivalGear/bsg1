@@ -195,3 +195,17 @@
   background:linear-gradient(90deg,#1f7d45,#65df7c);border-radius:999px
 }
 .approved-radio-manager .rm-read-progress.is-complete{border-color:#4b9762}
+
+/* Offline write planning never enables the physical Write/Verify controls. */
+.approved-radio-manager #prepare-uv16-write{
+  border:1px solid #b99c49;background:#40361c;color:#f2dfa3;
+  border-radius:7px;min-height:38px;padding:8px 13px;font-weight:700
+}
+.approved-radio-manager #prepare-uv16-write:hover{background:#514321}
+.approved-radio-manager #uv16-write-preparation-result{
+  display:block;white-space:pre-wrap;overflow-wrap:anywhere;
+  font:inherit;line-height:1.6;color:#e6d9ae;
+  border:1px solid #82703b;border-radius:10px;background:#251f12;
+  padding:14px 16px;margin:16px 0 0
+}
+.approved-radio-manager #uv16-write-preparation-result[hidden]{display:none!important}
