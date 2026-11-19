@@ -25,5 +25,14 @@ export function appendSampleRows(existing,sample,max=1000){
   // Sample rows must be validated; do not trust state or a mock result blindly.
   const rows=sample.map(c=>normaliseChannel(c));
   if(rows.some(c=>c.receiveOnly!==true))throw Error('Sample rows must be receive-only');
-  return [...existing,...rows];
+  // A repeated USB read must never append a second copy of the same memory.
+  // Existing user-edited rows are left unchanged.
+  const seen=new Set(existing.map(c=>[c.name,c.rx,c.tx].join('|')));
+  const missing=rows.filter(c=>{
+    const key=[c.name,c.rx,c.tx].join('|');
+    if(seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+  return [...existing,...missing];
 }
