@@ -94,12 +94,12 @@ if(page&&original&&editor){
    const text=sourcePreview?.textContent.trim()||'';
    const selected=modelSelector?.value==='uv-16-pro-v2';
    readSummary.hidden=!selected||!text;
-   if(readSummary.hidden)return;
+   if(readSummary.hidden){progressPanel.hidden=true;return;}
    const lines=text.split('\n').map(line=>line.trim()).filter(Boolean);
    const success=lines[0]?.startsWith('Read complete');
    const failed=lines[0]?.startsWith('Read failed');
    const reading=lines[0]?.startsWith('Reading UV-16');
-   const percentMatch=reading?lines[0]?.match(/(\\d{1,3})%/):null;
+   const percentMatch=reading?lines[0]?.match(/(\d{1,3})%/):null;
    const percent=success?100:percentMatch?Math.min(100,Math.max(0,Number(percentMatch[1]))):0;
    progressPanel.hidden=!selected||(!reading&&!success);
    if(!progressPanel.hidden){
