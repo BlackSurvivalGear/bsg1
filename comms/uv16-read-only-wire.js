@@ -66,7 +66,9 @@ export class UV16ReadOnlySession {
     this.#used=true;
     try{
       await this.#identifyHandshake(signal);
-      // Read only the already allowlisted firmware-information block.
+      // Preserve the original successful auxiliary-block order across Identify → Read.
+      // These are read-only configuration blocks; no channel memory is touched.
+      await this.#readBlock(0x1e80,signal);
       const block=await this.#readBlock(0x1ec0,signal);
       const firmware=String.fromCharCode(...block.slice(48,55));
       if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
@@ -82,7 +84,7 @@ export class UV16ReadOnlySession {
       // A successful standalone Identify leaves the radio in programming mode.
       // Reuse that session; sending MAGIC a second time can be rejected by real hardware.
       if(!this.#identified)await this.#identifyHandshake(signal);
-      for(const address of AUX){
+      for(const address of (this.#identified?[0x1fc0]:AUX)){
         const block=await this.#readBlock(address,signal);
         if(address===0x1ec0){
           const firmware=String.fromCharCode(...block.slice(48,55));
