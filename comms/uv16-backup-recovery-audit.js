@@ -38,7 +38,8 @@ export function simulateUV16MockRecovery({baseline,target,failAt=0}={}){
   uploadStopped:upload.stopped,uploadError:upload.error,
   partialStateMatchesBaseline:equal(afterFailure,baseline),
   partialStateMatchesTarget:equal(afterFailure,target),
-  simulatedRestorationMatchesBaseline:equal(restored,baseline),\n  simulatedRestoreAttempted:restoreReport!==null,simulatedRestoreStopped:restoreReport?.stopped??false,
+  simulatedRestorationMatchesBaseline:equal(restored,baseline),
+  simulatedRestoreAttempted:restoreReport!==null,simulatedRestoreStopped:restoreReport?.stopped??false,
   realRestorationDemonstrated:false,restorableBackupVerified:false,
   physicalWriteVerified:false,canWrite:false,
   warning:'Recreating a baseline in memory does not restore a physical radio.'
