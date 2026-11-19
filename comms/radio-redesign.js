@@ -75,6 +75,20 @@ if(page&&original&&editor){
  const readSummaryOutcome=document.createElement('p');
  readSummary.append(readSummaryTitle,readSummaryMeta,readSummaryOutcome);
  centre.append(readSummary);
+ // Read-only progress mirrors the existing USB reader's block callbacks.
+ // Never infer progress from elapsed time or send additional commands.
+ const progressPanel=document.createElement('div');
+ progressPanel.className='rm-read-progress';
+ progressPanel.hidden=true;
+ const progressLabel=document.createElement('div');
+ progressLabel.className='rm-read-progress-label';
+ const progressText=document.createElement('span');progressText.textContent='Reading radio memory';
+ const progressPercent=document.createElement('strong');progressPercent.textContent='0%';
+ progressLabel.append(progressText,progressPercent);
+ const progress=document.createElement('progress');
+ progress.max=100;progress.value=0;progress.setAttribute('aria-label','Radio channel read progress');
+ progressPanel.append(progressLabel,progress);
+ centre.insertBefore(progressPanel,readSummary);
  sourcePreview?.classList.add('rm-source-preview');
  function refreshReadSummary(){
    const text=sourcePreview?.textContent.trim()||'';
@@ -84,6 +98,16 @@ if(page&&original&&editor){
    const lines=text.split('\n').map(line=>line.trim()).filter(Boolean);
    const success=lines[0]?.startsWith('Read complete');
    const failed=lines[0]?.startsWith('Read failed');
+   const reading=lines[0]?.startsWith('Reading UV-16');
+   const percentMatch=reading?lines[0]?.match(/(\\d{1,3})%/):null;
+   const percent=success?100:percentMatch?Math.min(100,Math.max(0,Number(percentMatch[1]))):0;
+   progressPanel.hidden=!selected||(!reading&&!success);
+   if(!progressPanel.hidden){
+     progress.value=percent;
+     progressPercent.textContent=percent+'%';
+     progressText.textContent=success?'Channel read complete':'Reading radio memory';
+     progressPanel.classList.toggle('is-complete',success);
+   }
    readSummary.classList.toggle('is-success',success);
    readSummary.classList.toggle('is-error',failed);
    readSummaryTitle.textContent=success?'✓ '+lines[0]:failed?lines[0]:lines[0]||'';
