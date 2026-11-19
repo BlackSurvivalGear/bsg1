@@ -238,19 +238,27 @@ realVerify.onclick=async()=>{
   const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
     captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
   const report=compareUV16HardwareReadback({plan:pendingHardwarePlan,capture:result.fullMainCapture});
-  if(report.verified){
-   guardStatus.textContent='VERIFIED: one memory RX change present. All 6144 main bytes and five auxiliary blocks match the expected state. Export the latest radio capture before any further changes.';
+  // Every successful read is evidence worth preserving, including unchanged or
+  // mismatched results; do not imply that the proposed hardware write happened.
+  currentFullMainCapture=result.fullMainCapture;
+  currentReadSnapshot=result.rawSnapshot;
+  currentGuardCapture=result.chirpGuardCapture;
+  radioBackupExported=false;
+  fullExport.disabled=false;
+  snapshotExport.disabled=false;
+  if(report.status==='CHANGE_VERIFIED'){
+   guardStatus.textContent='VERIFIED: M'+(report.changedSlot+1)+
+    ' RX changed as requested. All 6144 main bytes and five auxiliary blocks match the expected state. Save Radio Backup Evidence now.';
    pendingHardwarePlan=null;
-   currentFullMainCapture=result.fullMainCapture;
-   currentReadSnapshot=result.rawSnapshot;
-   currentGuardCapture=result.chirpGuardCapture;
-   radioBackupExported=false;
-   populateLiveSlots();snapshotExport.disabled=false;
+   populateLiveSlots();
    logRadioEvent('One-channel HN5RV01 hardware write independently verified by full readback');
+  }else if(report.status==='UNCHANGED'){
+   guardStatus.textContent='UNCHANGED — VERIFIED: all 6144 main bytes and five auxiliary blocks match the original capture. The proposed RX write did NOT take effect. Save Radio Backup Evidence. Write remains locked; do not retry until the handshake is corrected.';
+   logRadioEvent('UV-16 full readback confirms original memory unchanged; hardware write not performed');
   }else{
-   guardStatus.textContent='VERIFY FAILED: '+(report.mainMatches?'Main memory matched. ':'Main memory differs. ')+
-    (report.auxiliaryMatches?'Auxiliary matched.':'Auxiliary differs.')+
-    ' No further write until the mismatch has been examined.';
+   guardStatus.textContent='MISMATCH — NOT VERIFIED: full readback differs from both the original and proposed memory. '+
+    (report.auxiliaryMatches?'Auxiliary blocks match. ':'Auxiliary blocks differ. ')+
+    'Save Radio Backup Evidence and stop. Write remains locked.';
    addDiagnostic('UV-16 hardware write readback mismatch; write remains locked');
   }
  }catch(error){

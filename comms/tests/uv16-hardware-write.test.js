@@ -81,3 +81,50 @@ test('preflight protects all TX bytes and reserved settings',()=>{
  assert.deepEqual(Buffer.from(p.beforeHex,'hex').subarray(4),Buffer.from(p.afterHex,'hex').subarray(4));
  assert.throws(()=>prepareUV16HardwareChange({capture,slot:1,newRxMHz:145.225}),/RX frequency only/);
 });
+
+// Regression: a refused handshake never sends the X write frame. After a
+// power cycle the full readback must classify the unchanged radio as intact.
+test('full readback after refused handshake confirms original 6144 bytes and auxiliary regions unchanged',()=>{
+ const {capture}=setup();
+ const plan=prepareUV16HardwareChange({capture,slot:1,newRxMHz:145.325});
+ const result=compareUV16HardwareReadback({plan,capture});
+ assert.equal(result.status,'UNCHANGED');
+ assert.equal(result.unchanged,true);
+ assert.equal(result.readbackMatches,true);
+ assert.equal(result.verified,false);
+ assert.equal(result.originalMainMatches,true);
+ assert.equal(result.auxiliaryMatches,true);
+});
+test('one-slot RX write is classified as changed only when complete main and auxiliary match',()=>{
+ const {capture}=setup();
+ const plan=prepareUV16HardwareChange({capture,slot:1,newRxMHz:145.325});
+ const changed=Buffer.from(capture.main.bytesHex,'hex');
+ Buffer.from(plan.afterHex,'hex').copy(changed,16);
+ const result=compareUV16HardwareReadback({plan,capture:{...capture,main:{...capture.main,bytesHex:changed.toString('hex')}}});
+ assert.equal(result.status,'CHANGE_VERIFIED');
+ assert.equal(result.verified,true);
+ assert.equal(result.unchanged,false);
+ assert.equal(result.originalMainMatches,false);
+ assert.equal(result.auxiliaryMatches,true);
+});
+test('unexpected main byte change or auxiliary difference is a mismatch, never unchanged or verified',()=>{
+ const {capture}=setup();
+ const plan=prepareUV16HardwareChange({capture,slot:1,newRxMHz:145.325});
+ const changed=Buffer.from(capture.main.bytesHex,'hex');changed[4096]=0;
+ const mainResult=compareUV16HardwareReadback({plan,capture:{...capture,main:{...capture.main,bytesHex:changed.toString('hex')}}});
+ assert.equal(mainResult.status,'MISMATCH');
+ assert.equal(mainResult.readbackMatches,false);
+ assert.equal(mainResult.verified,false);
+ const auxCapture={...capture,auxiliary:capture.auxiliary.map((x,i)=>i===4?{...x,bytesHex:'ff'.repeat(64)}:x)};
+ const auxResult=compareUV16HardwareReadback({plan,capture:auxCapture});
+ assert.equal(auxResult.status,'MISMATCH');
+ assert.equal(auxResult.unchanged,false);
+ assert.equal(auxResult.auxiliaryMatches,false);
+});
+test('invalid and truncated full readback cannot report success',()=>{
+ const {capture}=setup();
+ const plan=prepareUV16HardwareChange({capture,slot:1,newRxMHz:145.325});
+ assert.throws(()=>compareUV16HardwareReadback({plan,capture:{...capture,main:{...capture.main,bytesHex:capture.main.bytesHex.slice(2)}}}),/Complete HN5RV01 full-read evidence required/);
+ assert.throws(()=>compareUV16HardwareReadback({plan,capture:{...capture,firmware:'OTHER'}}),/Complete HN5RV01 full-read evidence required/);
+ assert.throws(()=>compareUV16HardwareReadback({plan:{...plan,beforeHex:'ff'.repeat(16)},capture}),/disagree/);
+});
