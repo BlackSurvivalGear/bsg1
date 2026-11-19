@@ -54,9 +54,27 @@ test('one primary centre control advances Connect, Identify, Read without duplic
  assert.ok(css.includes(".rm-advanced #connect{display:none!important}"));
 });
 test('radio image is fully contained with white-background blending and secondary write controls',()=>{
- assert.ok(css.includes("mix-blend-mode:multiply"));
+ assert.ok(css.includes("mix-blend-mode:normal"));
  assert.ok(css.includes("object-fit:contain"));
  assert.ok(css.includes(".rm-actions .rm-write,.approved-radio-manager .rm-actions .rm-verify"));
  for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+});
+
+test('image background is actually made transparent by one-time alpha flood fill',()=>{
+ const cutout=readFileSync(new URL('../radio-photo-cutout.js',import.meta.url),'utf8');
+ assert.ok(js.includes("import {prepareUV16Cutout} from './radio-photo-cutout.js';"));
+ assert.ok(js.includes('prepareUV16Cutout(img);'));
+ assert.ok(cutout.includes('context.getImageData(0,0,w,h)'));
+ assert.ok(cutout.includes('d[i*4+3]=0'));
+ assert.ok(cutout.includes("trimmed.toDataURL('image/png')"));
+ assert.ok(cutout.includes("img.dataset.cutoutReady='true'"));
+ assert.ok(!cutout.includes('setInterval('));
+});
+test('existing read and independent Identify share verified protocol session',()=>{
+ const wire=readFileSync(new URL('../uv16-read-only-wire.js',import.meta.url),'utf8');
+ assert.ok(wire.includes('if(!this.#identified)await this.#identifyHandshake(signal)'));
+ assert.ok(app.includes('identifiedSession:existingSession'));
+ assert.ok(app.includes('clearIdentifiedSession()'));
+ assert.ok(app.includes('Power-cycle the radio and reconnect USB before retrying.'));
 });
