@@ -213,7 +213,7 @@ radioRead.onclick=async()=>{
     return;
   }
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
-  if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This reads the radio without changing it. A backup of your current editor will be downloaded before new channels are added.'))return;
+  if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   sampleReading=true;refreshReadButton();
   $('usb-disconnect').disabled=true;
   samplePreview.textContent='Reading UV-16 Pro V2 — connecting…';
@@ -233,11 +233,13 @@ radioRead.onclick=async()=>{
     }
     // The initial Read confirmation authorises frequency-only import of missing rows.
     // Never replace or edit existing user channels.
-    const backup=JSON.stringify({format:'squawk-channels-v1',channels},null,2);
-    download('bsg-comms-before-uv16-import.json',backup,'application/json');
+    if(channels.length){
+      const backup=JSON.stringify({format:'squawk-channels-v1',channels},null,2);
+      download('bsg-comms-before-uv16-import.json',backup,'application/json');
+    }
     channels=updated;render();
     samplePreview.textContent+='\n'+missing+' channels added to Channel Editor. Existing channels preserved.';
-    addDiagnostic('Loaded '+missing+' new UV-16 frequency rows; '+(result.channels.length-missing)+' duplicates skipped; backup download started');
+    addDiagnostic('Loaded '+missing+' new UV-16 frequency rows; '+(result.channels.length-missing)+' duplicates skipped; previous editor backed up when nonempty');
     logRadioEvent('Added '+missing+' new UV-16 channel rows; no radio changes made');
   }catch(error){
     samplePreview.textContent='Read failed — '+(error.code==='TIMEOUT'?'radio did not respond':error.message)+'. No channel changes made. Reconnect USB before another attempt.';
