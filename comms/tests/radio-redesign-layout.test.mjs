@@ -108,7 +108,7 @@ test('selecting radios refreshes their own image and only UV-16 receives read wo
  assert.ok(js.includes("current.id==='uv-16-pro-v2')prepareUV16Cutout(img)"));
  assert.ok(js.includes("const supportsPhysicalRead=selectedModel?.physicalRead===true"));
  assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
- assert.ok(js.includes("read.hidden=!identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
  assert.ok(js.includes("primaryConnect.disabled=connect.disabled||!supportsPhysicalRead"));
  assert.ok(js.includes("fwValue.textContent=!supportsPhysicalRead?'Unsupported'"));
  const cutout=readFileSync(new URL('../radio-photo-cutout.js',import.meta.url),'utf8');
@@ -133,7 +133,7 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(css.includes('.rm-photo{grid-column:1;grid-row:3'));
  assert.ok(js.includes("primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();}"));
  assert.ok(js.includes("modelSelector?.addEventListener('change',refreshRadioImage)"));
- assert.ok(js.includes("identifyButton.hidden=!connected||identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!connected||!supportsPhysicalRead"));
  assert.ok(js.includes('centre.append(read,readHint)'));
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
