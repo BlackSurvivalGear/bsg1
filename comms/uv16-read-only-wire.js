@@ -61,7 +61,7 @@ export class UV16ReadOnlySession {
       blockFailure('Block acknowledgement unavailable: '+error.message,error.code||'READ_FAILED',address,{phase:'ack'});
     }
     if(first!==6&&first!==0x58)
-      blockFailure('Invalid block ACK','BAD_ACK',address,{expected:6,actual:first,phase:'ack'});
+      blockFailure('Invalid block ACK; accepted values 0x06 or 0x58','BAD_ACK',address,{expected:6,actual:first,phase:'ack'});
     let header,block;
     try{
       header=first===6?await this.#receive(4,signal):Uint8Array.from([first,...await this.#receive(3,signal)]);
