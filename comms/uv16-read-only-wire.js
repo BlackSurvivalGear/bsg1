@@ -24,17 +24,8 @@ function freq(raw){
   return mhz;
 }
 const abortCheck=signal=>{if(signal?.aborted)fail('Cancelled','ABORTED');};
-const hex=value=>'0x'+value.toString(16).toUpperCase().padStart(2,'0');
-const addressLabel=address=>'0x'+address.toString(16).toUpperCase().padStart(4,'0');
-function blockFailure(message,code,address,{expected=null,actual=null,phase='block'}={}){
-  const detail=message+' at '+addressLabel(address)+(expected===null?'':' (expected '+hex(expected)+', received '+hex(actual)+')');
-  const error=new UV16ReadError(detail,code);
-  error.address=address;error.phase=phase;
-  if(expected!==null){error.expected=expected;error.actual=actual;}
-  throw error;
-}
 export class UV16ReadOnlySession {
-  #port; #rx; #used=false; #closed=false; #identified=false; #completed=false;
+  #port; #rx; #used=false; #closed=false;
   constructor({port,timeoutMs=2000}={}){
     if(!port?.readable?.getReader||!port?.writable?.getWriter)fail('Open serial port required','PORT_UNAVAILABLE');
     this.#port=port;
@@ -54,65 +45,25 @@ export class UV16ReadOnlySession {
   async #readBlock(address,signal){
     if(![...AUX,...MEMORY_ADDRESSES].includes(address))fail('Address denied','ADDRESS_DENIED');
     await this.#command([0x53,address>>8,address&255,64],signal);
-    let first;
-    try{first=(await this.#receive(1,signal))[0];}
-    catch(error){
-      if(error.code==='ABORTED')throw error;
-      blockFailure('Block acknowledgement unavailable: '+error.message,error.code||'READ_FAILED',address,{phase:'ack'});
-    }
-    if(first!==6&&first!==0x58)
-      blockFailure('Invalid block ACK; accepted values 0x06 or 0x58','BAD_ACK',address,{expected:6,actual:first,phase:'ack'});
-    let header,block;
-    try{
-      header=first===6?await this.#receive(4,signal):Uint8Array.from([first,...await this.#receive(3,signal)]);
-    }catch(error){
-      if(error.code==='ABORTED')throw error;
-      blockFailure('Block header incomplete: '+error.message,error.code||'READ_FAILED',address,{phase:'header'});
-    }
-    if(!same([...header],[0x58,address>>8,address&255,64])){
-      const error=new UV16ReadError('Wrong frame or address at '+addressLabel(address)+' (expected header '+[0x58,address>>8,address&255,64].map(hex).join(' ')+', received '+[...header].map(hex).join(' ')+')','BAD_FRAME');
-      error.address=address;error.phase='header';throw error;
-    }
-    try{block=await this.#receive(64,signal);}
-    catch(error){
-      if(error.code==='ABORTED')throw error;
-      blockFailure('Block payload incomplete: '+error.message,error.code||'READ_FAILED',address,{phase:'data'});
-    }
+    const first=(await this.#receive(1,signal))[0];
+    if(first!==6&&first!==0x58)fail('Invalid block ACK','BAD_ACK');
+    const header=first===6?await this.#receive(4,signal):Uint8Array.from([first,...await this.#receive(3,signal)]);
+    if(!same([...header],[0x58,address>>8,address&255,64]))fail('Wrong frame or address','BAD_FRAME');
+    const block=await this.#receive(64,signal);
     await this.#command([6],signal);
     return block;
   }
-  async #identifyHandshake(signal){
+  async readMemory({signal,onProgress}={}){
+    if(this.#used)fail('Session already used','SESSION_USED');
+    this.#used=true;
+    try{
       for(const byte of MAGIC)await this.#command([byte],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Magic rejected','BAD_ACK');
       await this.#command([2],signal);
       if(!same([...await this.#receive(8,signal)],ID))fail('Unexpected identity','WRONG_IDENTITY');
       await this.#command([6],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Identity ACK rejected','BAD_ACK');
-  }
-  async identify({signal}={}){
-    if(this.#used)fail('Session already used','SESSION_USED');
-    this.#used=true;
-    try{
-      await this.#identifyHandshake(signal);
-      // Preserve the original successful auxiliary-block order across Identify → Read.
-      // These are read-only configuration blocks; no channel memory is touched.
-      await this.#readBlock(0x1e80,signal);
-      const block=await this.#readBlock(0x1ec0,signal);
-      const firmware=String.fromCharCode(...block.slice(48,55));
-      if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
-      this.#identified=true;
-      return Object.freeze({firmware,model:'uv-16-pro-v2',readOnly:true,hardwareVerified:false});
-    }catch(error){this.close();throw error;}
-  }
-  async readMemory({signal,onProgress}={}){
-    if(this.#completed||this.#closed)fail('Session already used','SESSION_USED');
-    if(this.#used&&!this.#identified)fail('Session already used','SESSION_USED');
-    this.#used=true;this.#completed=true;
-    try{
-      // A successful standalone Identify leaves the radio in programming mode.
-      // Reuse that session; sending MAGIC a second time can be rejected by real hardware.
-      if(!this.#identified)await this.#identifyHandshake(signal);
-      for(const address of (this.#identified?[0x1fc0]:AUX)){
+      for(const address of AUX){
         const block=await this.#readBlock(address,signal);
         if(address===0x1ec0){
           const firmware=String.fromCharCode(...block.slice(48,55));
