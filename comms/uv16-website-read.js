@@ -20,8 +20,10 @@ export async function readUV16WebsiteSample({connection,model,consent=false,Sess
   return Object.freeze({firmware:result.firmware,capacity:result.capacity,channels:Object.freeze(channels),hardwareVerified:false});
 }
 export function formatUV16Sample(result){
-  return ['Read complete — '+result.channels.length+' programmed channels found',
+  return [
+    'Read complete — '+result.channels.length+' programmed channels found',
+    'Scanned '+result.capacity+' memory locations.',
     'Radio firmware: '+result.firmware,
-    ...result.channels.map(c=>'Memory '+(c.slot+1)+': RX '+c.rx.toFixed(5)+' MHz / TX '+c.tx.toFixed(5)+' MHz'),
-    'Channel frequencies retrieved. Other settings are not yet verified.'].join('\n');
+    'Channel frequencies retrieved. Mode, tones and power not yet verified.'
+  ].join('\n');
 }
