@@ -405,8 +405,8 @@ main{max-width:none;padding:0;margin:0}
 .workspace-view[data-workspace="radios"] .radio-editor-program-actions button{font-size:.94rem;font-weight:800;letter-spacing:.025em;min-height:52px;padding:11px 18px;border-width:2px;border-style:solid;border-radius:9px;text-shadow:0 1px 1px #0005}
 .workspace-view[data-workspace="radios"] #radio-read{background:#17633f;border-color:#49c88a;color:#fff}
 .workspace-view[data-workspace="radios"] #radio-read:disabled{background:#17402c;border-color:#3a805b;color:#c5e3d0;opacity:.7;cursor:not-allowed}
-.workspace-view[data-workspace="radios"] #radio-write-placeholder:disabled{background:#483d19;border-color:#d9b85c;color:#e8ca78;opacity:.78;cursor:not-allowed}
-.workspace-view[data-workspace="radios"] #radio-verify-write-placeholder:disabled{background:#263547;border-color:#6787a6;color:#a9c8ea;opacity:.78;cursor:not-allowed}
+.workspace-view[data-workspace="radios"] #radio-write:disabled{background:#483d19;border-color:#d9b85c;color:#e8ca78;opacity:.78;cursor:not-allowed}
+.workspace-view[data-workspace="radios"] #radio-verify-write:disabled{background:#263547;border-color:#6787a6;color:#a9c8ea;opacity:.78;cursor:not-allowed}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel{border:1.5px solid #d8af52;background:#1c2b1d;border-radius:10px}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary{color:#ffd477;font-size:1.05rem;font-weight:800;letter-spacing:.015em;padding:13px 16px;line-height:1.4;cursor:pointer}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel>summary:hover{color:#ffe4a3;background:#263824}
@@ -494,3 +494,8 @@ header .bsg-logo-home:focus-visible{outline:2px solid #e6c47b;outline-offset:4px
 @media(prefers-reduced-motion:reduce){
  .app-sidebar{transition:none!important}
 }
+
+/* Physical radio actions: enabled state is unmistakably active, not a test placeholder. */
+.workspace-view[data-workspace="radios"] #radio-write:not(:disabled){background:#87640d;border-color:#e1b342;color:#fff4d4;font-weight:800}
+.workspace-view[data-workspace="radios"] #radio-verify-write:not(:disabled){background:#175a8c;border-color:#6ac2fa;color:#fff;font-weight:800}
+.workspace-view[data-workspace="radios"] #uv16-live-slot,.workspace-view[data-workspace="radios"] #uv16-live-rx,.workspace-view[data-workspace="radios"] #uv16-live-tx{background:#111c17;color:#f4edda;border:1px solid #738566;border-radius:6px;padding:9px;max-width:160px}

@@ -21,7 +21,7 @@ test('approved image is resolved relative to comms folder',()=>{
  assert.ok(js.includes('img.src=current.image'));
 });
 test('existing physical radio handlers and model-aware reader remain untouched',()=>{
- for(const id of ['connect','usb-disconnect','radio-read','radio-write-placeholder','radio-verify-write-placeholder','channels','radio-model']){
+ for(const id of ['connect','usb-disconnect','radio-read','radio-write','radio-verify-write','channels','radio-model']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
  assert.ok(app.includes('readUV16WebsiteSample({connection:connectionManager,model,consent:true,'));
@@ -30,11 +30,13 @@ test('existing physical radio handlers and model-aware reader remain untouched',
  }
  assert.ok(!js.includes('navigator.serial'));
 });
-test('write and verify remain physically disabled',()=>{
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
+test('real write and verify controls are guarded by the app and reparented unchanged',()=>{
+ for(const id of ['radio-write','radio-verify-write'])
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
- assert.ok(!js.includes('removeAttribute(\'disabled\')'));
- assert.ok(!js.includes('writeMemory('));
+ assert.ok(js.includes("write=$('radio-write'),verify=$('radio-verify-write')"));
+ assert.ok(app.includes("realWrite.onclick=async()=>"));
+ assert.ok(app.includes("realVerify.onclick=async()=>"));
+ assert.ok(!js.includes("removeAttribute('disabled')"));
 });
 test('four-step design renders accessible actual state instead of invented COM port',()=>{
  assert.ok(js.includes("['Connect Radio','Read Channels','Edit Channels','Write & Verify']"));
@@ -62,7 +64,7 @@ test('radio image is fully contained with white-background blending and secondar
  assert.ok(css.includes("mix-blend-mode:normal"));
  assert.ok(css.includes("object-fit:contain"));
  assert.ok(css.includes(".rm-actions .rm-write,.approved-radio-manager .rm-actions .rm-verify"));
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
+ for(const id of ['radio-write','radio-verify-write'])
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
 });
 
@@ -211,22 +213,16 @@ test('diagnostics show centered paired reports with one copy action and preserve
  assert.ok(app.includes("$('radio-refresh').onclick=refreshRadioDiagnostics"));
 });
 
-test('offline write preparation remains separate from the locked hardware write and verify controls',()=>{
- assert.ok(html.includes('id="prepare-uv16-write"'));
- assert.ok(html.includes('id="uv16-write-preparation-result" role="status" aria-live="polite" hidden'));
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
-  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
- assert.ok(app.includes("import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js'"));
- assert.ok(app.includes("writePreparationButton.onclick=()=>"));
- assert.ok(app.includes("download('bsg-comms-uv16-editor-before-write.json'"));
- const dryRun=readFileSync(new URL('../uv16-write-preparation.js',import.meta.url),'utf8');
- assert.ok(dryRun.includes('readyForHardware:false,writeEnabled:false'));
- assert.ok(dryRun.includes('radioMemorySlot:null'));
- assert.ok(dryRun.includes('rawMemoryBackupAvailable:false,firmwareMatchedEncoderVerified:false'));
- assert.ok(!dryRun.includes('getWriter('));
- assert.ok(!dryRun.includes('0x57'));
+test('radio programming uses full live capture and guarded physical write, not an offline preview',()=>{
+ for(const id of ['uv16-full-read','uv16-full-export','uv16-live-slot','uv16-live-rx','uv16-live-tx','radio-write','radio-verify-write'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(!html.includes('id="prepare-uv16-write"'));
+ assert.ok(!html.includes('id="uv16-preview-file"'));
+ assert.ok(app.includes("prepareUV16HardwareChange({capture:currentFullMainCapture"));
+ assert.ok(app.includes("writeUV16OneChannel({port:connectionManager.port"));
+ assert.ok(app.includes("compareUV16HardwareReadback({plan:pendingHardwarePlan"));
+ assert.ok(app.includes("radioBackupExported"));
 });
-
 test('offline write assessment is invalidated after channel edits, imports or model switch',()=>{
  assert.ok(app.includes("function render(){const stalePlan=$('uv16-write-preparation-result');"));
  assert.ok(app.includes("stalePlan.hidden=true;stalePlan.textContent=''"));
@@ -277,7 +273,7 @@ test('raw read-region snapshot export is disabled until a complete captured read
  assert.ok(app.includes("if(snapshot.state!=='connected')clearReadSnapshot()"));
  assert.ok(app.includes("download('bsg-uv16-hn5rv01-read-regions.json'"));
  assert.ok(app.includes("validateUV16ReadRegions(currentReadSnapshot)"));
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
+ for(const id of ['radio-write','radio-verify-write']){
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
  }
 });

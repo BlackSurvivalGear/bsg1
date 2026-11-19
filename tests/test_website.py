@@ -42,7 +42,10 @@ class WebsiteTests(unittest.TestCase):
         self.assertNotIn('id="simulator-read"', comms)
         self.assertNotIn('id="uv16-read-sample"', comms)
         self.assertNotIn('id="uv16-import-sample"', comms)
-        self.assertIn('id="radio-write-placeholder" type="button" disabled', comms)
+        self.assertIn('id="radio-write" type="button" disabled', comms)
+        self.assertIn('id="radio-verify-write" type="button" disabled', comms)
+        self.assertIn('id="uv16-full-read"', comms)
+        self.assertNotIn('id="uv16-preview-file"', comms)
         self.assertIn('id="restore">Restore JSON', comms)
 
     def test_comms_programming_banner(self):

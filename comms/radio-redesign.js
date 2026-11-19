@@ -51,7 +51,7 @@ if(page&&original&&editor){
  status.append(heading);
  const toolbar=document.createElement('div');toolbar.className='rm-actions';
  const connect=$('connect'),disconnect=$('usb-disconnect'),read=$('radio-read'),
-  write=$('radio-write-placeholder'),verify=$('radio-verify-write-placeholder');
+  write=$('radio-write'),verify=$('radio-verify-write');
  connect.classList.add('rm-action','rm-connect');connect.textContent='Connect Radio';
  disconnect.classList.add('rm-action','rm-disconnect');disconnect.textContent='Disconnect';
  read.classList.add('rm-action','rm-read');
@@ -217,11 +217,15 @@ if(page&&original&&editor){
   for(const [n,done] of [[1,connected],[2,readComplete],[3,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }
-  steps.querySelector('[data-step="4"]')?.classList.add('is-locked');
+  const fourth=steps.querySelector('[data-step="4"]');
+  fourth?.classList.toggle('is-locked',write.disabled&&verify.disabled);
+  fourth?.classList.toggle('is-complete',Boolean($('uv16-guard-status')?.textContent.startsWith('VERIFIED:')));
  }
  const statusObserver=new MutationObserver(refresh);
  for(const el of [$('usb-indicator'),$('radio-indicator'),$('model-name'),$('uv16-read-preview'),$('count')]){
   if(el)statusObserver.observe(el,{attributes:true,childList:true,characterData:true,subtree:true});
  }
+const actionStatus=$('uv16-guard-status');
+ if(actionStatus)statusObserver.observe(actionStatus,{attributes:true,childList:true,characterData:true,subtree:true});
  refresh();
 }

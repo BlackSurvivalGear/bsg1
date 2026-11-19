@@ -4,9 +4,8 @@ import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
 import {validateUV16ReadRegions} from './uv16-read-regions.js';
 import {compareBFF8HPCHIRPGuard} from './uv16-chirp-guard-comparison.js';
-import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js';
 import {inspectUV16Slot} from './uv16-offline-frequency-codec.js';
-import {previewUV16OfflineWrite,formatUV16OfflineWritePreview} from './uv16-write-preview.js';
+import {writeUV16OneChannel,prepareUV16HardwareChange,compareUV16HardwareReadback} from './uv16-hardware-write.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
@@ -26,80 +25,6 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 $('add').onclick=()=>{if(channels.length>=1000)return alert('Maximum 1000 channels');channels.push(normaliseChannel({name:'NEW',rx:'145.500',tx:'145.500',mode:'FM',notes:''}));render();};
 $('export').onclick=()=>download('bsg-comms-channels.csv',toCSV(channels),'text/csv');
 $('backup').onclick=()=>download('bsg-comms-backup.json',JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
-const writePreparationButton=$('prepare-uv16-write');
-const writePreparationResult=$('uv16-write-preparation-result');
-writePreparationButton.onclick=()=>{
- // This is a local assessment only: it must never use the USB port or issue a write.
- const plan=prepareUV16WritePlan({model,channels});
- writePreparationResult.hidden=false;
- writePreparationResult.textContent=formatUV16WritePlan(plan);
- if(model==='uv-16-pro-v2'){
-  // Download a JSON backup of *editor channels*, not a purported radio memory clone.
-  download('bsg-comms-uv16-editor-before-write.json',
-   JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
- }
-};
-
-// Deliberately separate from radio connection and physical Write/Verify.
-let offlinePreviewSnapshot=null;
-const offlineFile=$('uv16-preview-file'),offlineSlot=$('uv16-preview-slot');
-const offlineRx=$('uv16-preview-rx'),offlineTx=$('uv16-preview-tx');
-const offlineRun=$('uv16-preview-run'),offlineResult=$('uv16-preview-result');
-function resetOfflinePreview(){
- offlinePreviewSnapshot=null;
- offlineSlot.replaceChildren(new Option('Import a snapshot first',''));
- offlineSlot.disabled=true;offlineRx.disabled=true;offlineTx.disabled=true;
- offlineRx.value='';offlineTx.value='';offlineRun.disabled=true;
- offlineResult.textContent='No validated snapshot loaded. Hardware Write and Verify remain disabled.';
-}
-offlineFile.addEventListener('change',async()=>{
- resetOfflinePreview();
- const file=offlineFile.files?.[0];
- if(!file)return;
- try{
-  if(file.size>1024*1024)throw Error('Snapshot file exceeds the 1 MB limit');
-  const snapshot=JSON.parse(await file.text());
-  validateUV16ReadRegions(snapshot);
-  const slots=[];
-  for(let slot=0;slot<128;slot++){
-   if(snapshot.memory.bytesHex.slice(slot*32,slot*32+2)==='ff')continue;
-   const record=inspectUV16Slot(snapshot,slot);
-   slots.push(record);
-  }
-  if(!slots.length)throw Error('Snapshot contains no occupied memories');
-  offlinePreviewSnapshot=snapshot;
-  offlineSlot.replaceChildren(new Option('Choose a radio memory',''));
-  for(const record of slots)offlineSlot.add(new Option('M'+String(record.slot+1).padStart(2,'0')+
-   ' — '+record.rxMHz+' / '+record.txMHz+' MHz',String(record.slot)));
-  offlineSlot.disabled=false;
-  offlineResult.textContent='Validated '+slots.length+' occupied memories. Select a slot. This snapshot is not a restorable backup.';
- }catch(error){resetOfflinePreview();offlineResult.textContent='Snapshot rejected: '+error.message;}
-});
-offlineSlot.addEventListener('change',()=>{
- offlineRun.disabled=true;offlineRx.disabled=true;offlineTx.disabled=true;
- offlineRx.value='';offlineTx.value='';
- if(!offlinePreviewSnapshot||offlineSlot.value==='')return;
- try{
-  const record=inspectUV16Slot(offlinePreviewSnapshot,Number(offlineSlot.value));
-  offlineRx.value=String(record.rxMHz);offlineTx.value=String(record.txMHz);
-  offlineRx.disabled=false;offlineTx.disabled=false;offlineRun.disabled=false;
-  offlineResult.textContent='Memory '+(record.slot+1)+' selected. Original RX '+record.rxMHz+
-   ' MHz / TX '+record.txMHz+' MHz. Unknown settings are preserved; no hardware write is possible.';
- }catch(error){offlineResult.textContent='Selection rejected: '+error.message;}
-});
-offlineRun.addEventListener('click',()=>{
- if(!offlinePreviewSnapshot||offlineSlot.value==='')return;
- try{
-  const slot=Number(offlineSlot.value),original=inspectUV16Slot(offlinePreviewSnapshot,slot);
-  if(offlineRx.value.trim()===''||offlineTx.value.trim()==='')throw Error('Both proposed frequencies are required');
-  const report=previewUV16OfflineWrite({snapshot:offlinePreviewSnapshot,changes:[{
-   slot,expectedRxMHz:original.rxMHz,expectedTxMHz:original.txMHz,
-   newRxMHz:Number(offlineRx.value),newTxMHz:Number(offlineTx.value)
-  }]});
-  offlineResult.textContent=formatUV16OfflineWritePreview(report);
- }catch(error){offlineResult.textContent='Preview blocked: '+error.message+'\nHardware write: BLOCKED';}
-});
-
 let importType='csv';$('chirp-import').onclick=()=>{importType='chirp';$('file').accept='.csv,text/csv';$('file').click();};$('import').onclick=()=>{importType='csv';$('file').accept='.csv';$('file').click();};$('restore').onclick=()=>{importType='json';$('file').accept='.json';$('file').click();};
 $('file').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const incoming=importType==='csv'?parseCSV(await file.text()):importType==='chirp'?parseChirpCSV(await file.text()):parseBackup(await file.text());if(incoming.length>1000)throw Error('Maximum 1000 channels');if(confirm((importType==='chirp'?'Import '+incoming.length+' CHIRP memories as RECEIVE-ONLY channels? This replaces the current local editor list but does not write to the radio.':'Replace the current channel list with '+incoming.length+' imported channels?'))){channels=incoming;render();}}catch(e){alert('Import failed: '+e.message);}event.target.value='';};
 document.addEventListener('squawk-add-receive-only-channel',event=>{
@@ -125,6 +50,46 @@ snapshotExport.onclick=()=>{
 };
 let currentGuardCapture=null;
 let currentFullMainCapture=null;
+let radioBackupExported=false;
+let pendingHardwarePlan=null;
+let hardwareBusy=false;
+const liveSlot=$('uv16-live-slot'),liveRx=$('uv16-live-rx'),liveTx=$('uv16-live-tx');
+const realWrite=$('radio-write'),realVerify=$('radio-verify-write');
+function populateLiveSlots(){
+ liveSlot.replaceChildren(new Option('Select an occupied memory',''));
+ if(!currentFullMainCapture)return;
+ const data=currentFullMainCapture.main.bytesHex;
+ for(let slot=0;slot<128;slot++){
+  if(data.slice(slot*32,slot*32+2).toLowerCase()==='ff')continue;
+  const offset=slot*32;
+  const freq=h=>Number(h.match(/../g).reverse().map(v=>v.split('').join('')).join(''))/100000;
+  // Displayed values come from the same capture that write preflight will validate.
+  const rx=freq(data.slice(offset,offset+8));
+  liveSlot.add(new Option('M'+String(slot+1).padStart(2,'0')+' — '+rx.toFixed(5)+' MHz',String(slot)));
+ }
+ liveSlot.value='';
+ liveRx.value='';liveTx.value='';
+}
+function refreshWriteControls(){
+ const available=connectionManager.state==='connected'&&connectionManager.mode==='usb'&&model==='uv-16-pro-v2';
+ liveSlot.disabled=!available||!currentFullMainCapture||!!pendingHardwarePlan||hardwareBusy;
+ liveRx.disabled=liveSlot.disabled||liveSlot.value==='';
+ realWrite.disabled=!available||!currentFullMainCapture||!radioBackupExported||
+  !!pendingHardwarePlan||hardwareBusy||liveSlot.value===''||liveRx.value==='';
+ realVerify.disabled=!available||!pendingHardwarePlan||hardwareBusy;
+}
+liveSlot.onchange=()=>{
+ liveRx.value='';liveTx.value='';
+ if(currentFullMainCapture&&liveSlot.value!==''){
+  const slot=Number(liveSlot.value),main=currentFullMainCapture.main.bytesHex;
+  const raw=main.slice(slot*32,slot*32+32);
+  const decode=h=>Number(h.match(/../g).reverse().join(''))/100000;
+  liveRx.value=String(decode(raw.slice(0,8)));
+  liveTx.value=decode(raw.slice(8,16)).toFixed(5);
+ }
+ refreshWriteControls();
+};
+liveRx.oninput=refreshWriteControls;
 const fullRead=$('uv16-full-read'),fullExport=$('uv16-full-export');
 let guardReading=false;
 const guardRead=$('uv16-guard-read'),guardExport=$('uv16-guard-export');
@@ -132,14 +97,18 @@ const guardImage=$('uv16-guard-image'),guardCompare=$('uv16-guard-compare'),guar
 function clearGuardCapture(){
  currentGuardCapture=null;
  currentFullMainCapture=null;
+ radioBackupExported=false;
+ populateLiveSlots();
+ refreshWriteControls();
  fullExport.disabled=true;
  guardExport.disabled=true;
  guardCompare.disabled=true;
  guardStatus.textContent='No guard capture. Write and Verify remain disabled.';
 }
 function refreshGuardControls(){
- guardRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
- fullRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ guardRead.disabled=sampleReading||guardReading||hardwareBusy||!!pendingHardwarePlan||!canReadSelectedRadio();
+ fullRead.disabled=sampleReading||guardReading||!!pendingHardwarePlan||hardwareBusy||!canReadSelectedRadio();
+ refreshWriteControls();
  fullExport.disabled=sampleReading||guardReading||!currentFullMainCapture;
  guardCompare.disabled=guardReading||sampleReading||!currentGuardCapture||!guardImage.files?.length;
  guardExport.disabled=!currentGuardCapture||guardReading||sampleReading;
@@ -147,6 +116,7 @@ function refreshGuardControls(){
 guardImage.onchange=()=>refreshGuardControls();
 fullExport.onclick=()=>{
  if(!currentFullMainCapture)return;
+ radioBackupExported=true;refreshWriteControls();
  download('bsg-uv16-hn5rv01-full-read-evidence.json',
   JSON.stringify({...currentFullMainCapture,capturedAt:new Date().toISOString()},null,2),'application/json');
 };
@@ -161,13 +131,14 @@ fullRead.onclick=async()=>{
   const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
    captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
   currentFullMainCapture=result.fullMainCapture;
+  populateLiveSlots();
   currentGuardCapture=result.chirpGuardCapture;
   currentReadSnapshot=result.rawSnapshot;
   snapshotExport.disabled=false;
   physicalRadioIdentified=true;
   updateConnectionIndicators(connectionManager.snapshot());
   lastPhysicalProtocol='Complete read-only main-memory capture';
-  guardStatus.textContent='Full read complete: 6144 main bytes and five stored auxiliary blocks. Export Full Read JSON. Write remains BLOCKED; not a restorable backup.';
+  guardStatus.textContent='Full read complete: 6144 main bytes. Save Radio Backup Evidence, select one memory and change RX frequency. This experimental write risks disabling the test radio.';
   addDiagnostic('UV-16 full main-memory read-only capture complete');
   logRadioEvent('UV-16 6144-byte full main capture complete; no radio changes');
  }catch(error){
@@ -227,6 +198,70 @@ guardRead.onclick=async()=>{
   $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
  }
 };
+realWrite.onclick=async()=>{
+ if(hardwareBusy||pendingHardwarePlan||!currentFullMainCapture||!radioBackupExported||
+    !canReadSelectedRadio()||liveSlot.value==='')return;
+ let plan;
+ try{plan=prepareUV16HardwareChange({capture:currentFullMainCapture,
+    slot:Number(liveSlot.value),newRxMHz:Number(liveRx.value)});}
+ catch(error){guardStatus.textContent='Write blocked: '+error.message;return;}
+ const message='PHYSICAL RADIO WRITE — DESIGNATED TEST UV-16 ONLY.\\nMemory M'+
+  (plan.slot+1)+' RX '+plan.oldRxMHz+' → '+plan.newRxMHz+' MHz. TX remains '+plan.txMHz+
+  ' MHz.\\nHN5RV01 write has never been proven; this may disable your test radio. Recovery is not verified.\\nType WRITE to authorise ONE hardware block.';
+ if(prompt(message)!=='WRITE')return;
+ if(!confirm('LAST CONFIRMATION: Send ONE real 16-byte memory write to the attached UV-16?'))return;
+ pendingHardwarePlan=plan;
+ hardwareBusy=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Checking live radio identity, original channel and auxiliary memory before ONE hardware write…';
+ try{
+  const result=await writeUV16OneChannel({port:connectionManager.port,capture:currentFullMainCapture,
+    slot:plan.slot,newRxMHz:plan.newRxMHz,consent:true});
+  guardStatus.textContent='Radio acknowledged one physical write at memory M'+(plan.slot+1)+
+    '. NOT VERIFIED. Disconnect, power-cycle the test radio, reconnect USB, then select Verify Write. Do not repeat Write.';
+  logRadioEvent('One HN5RV01 hardware memory block ACK received; readback pending');
+ }catch(error){
+  guardStatus.textContent='Hardware write attempt stopped: '+error.message+
+   '\\nPhysical radio state may be UNKNOWN. Reconnect and use Verify Write; do not retry Write.';
+  addDiagnostic('HN5RV01 write stopped: '+error.message);
+ }finally{
+  hardwareBusy=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
+realVerify.onclick=async()=>{
+ if(hardwareBusy||!pendingHardwarePlan||!canReadSelectedRadio())return;
+ hardwareBusy=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Reading entire radio memory to verify the attempted hardware change…';
+ try{
+  const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+    captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
+  const report=compareUV16HardwareReadback({plan:pendingHardwarePlan,capture:result.fullMainCapture});
+  if(report.verified){
+   guardStatus.textContent='VERIFIED: one memory RX change present. All 6144 main bytes and five auxiliary blocks match the expected state. Export the latest radio capture before any further changes.';
+   pendingHardwarePlan=null;
+   currentFullMainCapture=result.fullMainCapture;
+   currentReadSnapshot=result.rawSnapshot;
+   currentGuardCapture=result.chirpGuardCapture;
+   radioBackupExported=false;
+   populateLiveSlots();snapshotExport.disabled=false;
+   logRadioEvent('One-channel HN5RV01 hardware write independently verified by full readback');
+  }else{
+   guardStatus.textContent='VERIFY FAILED: '+(report.mainMatches?'Main memory matched. ':'Main memory differs. ')+
+    (report.auxiliaryMatches?'Auxiliary matched.':'Auxiliary differs.')+
+    ' No further write until the mismatch has been examined.';
+   addDiagnostic('UV-16 hardware write readback mismatch; write remains locked');
+  }
+ }catch(error){
+  guardStatus.textContent='Verify failed: '+error.message+
+   '. Disconnect, power-cycle, reconnect and use Verify Write again. Do NOT write again.';
+ }finally{
+  hardwareBusy=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
+
 let sampleReading=false;
 function canReadSelectedRadio(){
   return connectionManager.state==='connected'&&(
@@ -236,7 +271,7 @@ function canReadSelectedRadio(){
 function refreshReadButton(){
   const selected=MODELS.find(item=>item.id===model);
   radioRead.textContent='Read '+(selected?.name||'Radio').replace(/^Baofeng /,'');
-  radioRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+  radioRead.disabled=sampleReading||guardReading||hardwareBusy||!!pendingHardwarePlan||!canReadSelectedRadio();
   refreshGuardControls();
   radioRead.title=model==='uv-16-pro-v2'
     ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
@@ -356,7 +391,7 @@ $('usb-test').onclick=async()=>{
   }
 };
 radioRead.onclick=async()=>{
-  if(sampleReading||guardReading||!canReadSelectedRadio())return;
+  if(sampleReading||guardReading||hardwareBusy||pendingHardwarePlan||!canReadSelectedRadio())return;
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
   if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   clearReadSnapshot();
@@ -408,7 +443,10 @@ radioRead.onclick=async()=>{
 };
 $('usb-disconnect').onclick=async()=>{
   if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
-  try{await connectionManager.disconnect();clearReadSnapshot();clearGuardCapture();}
+  try{await connectionManager.disconnect();clearReadSnapshot();
+    // Keep exported full-memory baseline across a power cycle for guarded write/verify.
+    guardStatus.textContent=pendingHardwarePlan?'Reconnect the test UV-16 and select Verify Write. Do not repeat the write.':
+      currentFullMainCapture?'Full radio capture retained. Reconnect the SAME test radio to continue programming.':'Connect the test radio and select Read Full Radio.';}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');

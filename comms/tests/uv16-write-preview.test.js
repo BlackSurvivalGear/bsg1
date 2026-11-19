@@ -59,19 +59,18 @@ test('reject tampered snapshot and never interpret it as a restorable backup',()
  assert.throws(()=>previewUV16OfflineWrite({snapshot:tampered,changes:[change]}),/integrity check failed/);
 });
 
-test('UI preview controls remain offline and physical write buttons remain disabled',async()=>{
+test('new UI uses live capture and guarded physical actions; offline preview remains library-only',async()=>{
  const {readFileSync}=await import('node:fs');
  const {fileURLToPath}=await import('node:url');
  const {resolve,dirname}=await import('node:path');
  const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
  const html=readFileSync(resolve(root,'index.html'),'utf8');
  const app=readFileSync(resolve(root,'app.js'),'utf8');
- for(const id of ['uv16-preview-file','uv16-preview-slot','uv16-preview-rx','uv16-preview-tx','uv16-preview-run','uv16-preview-result'])
+ for(const id of ['uv16-full-read','uv16-full-export','uv16-live-slot','uv16-live-rx','uv16-live-tx','radio-write','radio-verify-write'])
   assert.match(html,new RegExp('id="'+id+'"'));
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
-  assert.match(html,new RegExp('id="'+id+'"[^>]*\\bdisabled\\b'));
- assert.match(app,/previewUV16OfflineWrite\(/);
- assert.match(app,/validateUV16ReadRegions\(snapshot\)/);
- assert.match(app,/Snapshot rejected:/);
- assert.match(app,/Preview blocked:/);
+ assert.ok(!html.includes('id="uv16-preview-file"'));
+ assert.ok(!app.includes('previewUV16OfflineWrite('));
+ assert.match(app,/writeUV16OneChannel\(/);
+ assert.match(app,/compareUV16HardwareReadback\(/);
+ assert.match(app,/radioBackupExported/);
 });
