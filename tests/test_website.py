@@ -34,7 +34,9 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('href="./comms/"', html)
         self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
         self.assertIn('BSG COMMS', comms)
-        self.assertIn('href="../dashboard/"', comms)
+        self.assertIn('href="https://blacksurvivalgear.github.io/bsg1/"', comms)
+        self.assertIn('class="bsg-logo-home"', comms)
+        self.assertNotIn('class="bsg-home-link"', comms)
         self.assertIn('id="radio-read" type="button" disabled', comms)
         self.assertNotIn('id="simulator-read"', comms)
         self.assertNotIn('id="uv16-read-sample"', comms)
@@ -69,7 +71,9 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('BSG OSINT', dashboard)
         self.assertIn('Launch BSG OSINT', dashboard)
         self.assertIn('href="../osint/"', dashboard)
-        self.assertIn('href="../dashboard/"', comms)
+        self.assertIn('href="https://blacksurvivalgear.github.io/bsg1/"', comms)
+        self.assertIn('class="bsg-logo-home"', comms)
+        self.assertNotIn('class="bsg-home-link"', comms)
         self.assertIn('BSG%20GOLD%20LOGO.png', css)
 
     def test_osint_app_modules_present(self):
