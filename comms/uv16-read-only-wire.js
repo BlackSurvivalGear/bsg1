@@ -53,16 +53,31 @@ export class UV16ReadOnlySession {
     await this.#command([6],signal);
     return block;
   }
-  async readMemory({signal,onProgress}={}){
-    if(this.#used)fail('Session already used','SESSION_USED');
-    this.#used=true;
-    try{
+  async #identifyHandshake(signal){
       for(const byte of MAGIC)await this.#command([byte],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Magic rejected','BAD_ACK');
       await this.#command([2],signal);
       if(!same([...await this.#receive(8,signal)],ID))fail('Unexpected identity','WRONG_IDENTITY');
       await this.#command([6],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Identity ACK rejected','BAD_ACK');
+  }
+  async identify({signal}={}){
+    if(this.#used)fail('Session already used','SESSION_USED');
+    this.#used=true;
+    try{
+      await this.#identifyHandshake(signal);
+      // Read only the already allowlisted firmware-information block.
+      const block=await this.#readBlock(0x1ec0,signal);
+      const firmware=String.fromCharCode(...block.slice(48,55));
+      if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
+      return Object.freeze({firmware,model:'uv-16-pro-v2',readOnly:true,hardwareVerified:false});
+    }finally{this.close();}
+  }
+  async readMemory({signal,onProgress}={}){
+    if(this.#used)fail('Session already used','SESSION_USED');
+    this.#used=true;
+    try{
+      await this.#identifyHandshake(signal);
       for(const address of AUX){
         const block=await this.#readBlock(address,signal);
         if(address===0x1ec0){

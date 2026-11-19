@@ -2,6 +2,7 @@ import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sd
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
+import {UV16ReadOnlySession} from './uv16-read-only-wire.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
@@ -41,6 +42,8 @@ function refreshReadButton(){
   const selected=MODELS.find(item=>item.id===model);
   radioRead.textContent='Read '+(selected?.name||'Radio').replace(/^Baofeng /,'');
   radioRead.disabled=sampleReading||!canReadSelectedRadio();
+  const identifyButton=$('radio-identify');
+  if(identifyButton)identifyButton.disabled=sampleReading||!canReadSelectedRadio();
   radioRead.title=model==='uv-16-pro-v2'
     ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
     :'USB memory reading is not yet implemented for this model';
@@ -129,6 +132,34 @@ const connectionManager=new ConnectionManager({
   onLog:addDiagnostic
 });
 $('connect').onclick=async()=>{try{await connectionManager.connectUSB();}catch(e){alert('Connection failed: '+e.message);}};
+// Identify the physical device separately from a full channel read. Read-only protocol;
+ // explicit action, firmware validated before status is marked identified.
+document.addEventListener('click',async event=>{
+  if(event.target?.id!=='radio-identify')return;
+  if(sampleReading||!canReadSelectedRadio())return;
+  if(!confirm('Identify the connected UV-16 Pro V2 using a read-only firmware handshake?'))return;
+  sampleReading=true;refreshReadButton();
+  $('usb-disconnect').disabled=true;
+  const button=$('radio-identify');
+  if(button)button.textContent='Identifying…';
+  try{
+    const result=await new UV16ReadOnlySession({port:connectionManager.port}).identify();
+    physicalRadioIdentified=true;
+    updateConnectionIndicators(connectionManager.snapshot());
+    $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
+    addDiagnostic('Physical UV-16 identity verified: '+result.firmware+' (no channel read or write)');
+    logRadioEvent('Read-only identity check complete: '+result.firmware);
+  }catch(error){
+    physicalRadioIdentified=false;updateConnectionIndicators(connectionManager.snapshot());
+    $('connection').textContent='Radio identification failed: '+error.message+'. USB remains connected.';
+    addDiagnostic('Physical radio identification failed: '+error.message);
+  }finally{
+    sampleReading=false;
+    if(button)button.textContent='Identify Radio';
+    refreshReadButton();
+    $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+  }
+});
 $('usb-test').onclick=async()=>{
   if(connectionManager.state!=='disconnected')return;
   const button=$('usb-test');

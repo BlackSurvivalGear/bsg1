@@ -15,13 +15,15 @@ if(page&&original&&editor){
  }
  const hero=document.createElement('section');hero.className='rm-hero';hero.setAttribute('aria-label','Physical radio');
  const photo=document.createElement('div');photo.className='rm-photo';
- const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.onerror=()=>{img.hidden=true;};
+ const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.decoding='async';img.onerror=()=>{img.hidden=true;};
  photo.append(img);
  const centre=document.createElement('div');centre.className='rm-main';
  const title=document.createElement('h2');title.className='rm-model';title.textContent=$('model-name')?.textContent||'Radio Manager';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
  const readHint=document.createElement('p');readHint.className='rm-read-hint';readHint.textContent='Read the radio’s programmed channels from the physical device.';
- centre.append(title,firmware);
+ const identifyButton=document.createElement('button');identifyButton.type='button';identifyButton.id='radio-identify';identifyButton.className='rm-identify-button';identifyButton.textContent='Identify Radio';identifyButton.disabled=true;
+ const primaryConnect=document.createElement('button');primaryConnect.type='button';primaryConnect.id='rm-primary-connect';primaryConnect.className='rm-primary-button';primaryConnect.textContent='Connect Radio';
+ centre.append(title,firmware,primaryConnect,identifyButton);
  const status=document.createElement('div');status.className='rm-status';
  const heading=document.createElement('h3');heading.textContent='Radio Status';
  const connection=document.createElement('p');connection.className='rm-live-state';connection.textContent='Radio disconnected';
@@ -40,7 +42,10 @@ if(page&&original&&editor){
  read.classList.add('rm-action','rm-read');
  write.classList.add('rm-action','rm-write');
  verify.classList.add('rm-action','rm-verify');
- toolbar.append(connect,disconnect,write,verify);
+ // Existing physical connect handler remains intact but is only invoked through the centre control.
+ // Keep its original DOM node inside diagnostics; do not introduce a second connection path.
+ primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();};
+ toolbar.append(disconnect,write,verify);
  centre.append(read,readHint);
  const backup=document.createElement('button');backup.type='button';backup.className='rm-action rm-backup';backup.textContent='Backup / Restore';
  backup.onclick=()=>{page.querySelector('.radio-editor-file-actions')?.scrollIntoView({behavior:'smooth',block:'center'});};
@@ -85,6 +90,16 @@ if(page&&original&&editor){
   firmware.textContent=identified?'Firmware HN5RV01':'Firmware not yet identified';
   connection.textContent=identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
+  // Exactly one primary action is visible. Never present Read before firmware identification.
+  primaryConnect.hidden=connected;
+  identifyButton.hidden=!connected||identified;
+  read.hidden=!identified;
+  primaryConnect.disabled=connect.disabled;
+  identifyButton.disabled=!connected||read.disabled;
+  if(!identifyButton.disabled)identifyButton.textContent='Identify Radio';
+  readHint.textContent=!connected?'Connect the physical radio using its USB programming cable.'
+   :!identified?'Identify the radio and verify firmware HN5RV01 before reading memories.'
+   :'Read the radio’s programmed channels from the physical device.';
   for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }

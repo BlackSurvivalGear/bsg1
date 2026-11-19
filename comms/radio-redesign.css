@@ -44,3 +44,17 @@
 .approved-radio-manager .radio-editor-file-actions{margin-top:14px}
 @media(max-width:1100px){.approved-radio-manager .rm-hero{grid-template-columns:145px 1fr}.approved-radio-manager .rm-status{grid-column:1/-1}.approved-radio-manager .rm-steps{flex-wrap:wrap}.approved-radio-manager .rm-step{flex-basis:30%}}
 @media(max-width:700px){.approved-radio-manager .rm-hero{grid-template-columns:1fr;text-align:left}.approved-radio-manager .rm-photo{height:175px}.approved-radio-manager .rm-status{grid-column:auto}.approved-radio-manager .rm-actions{grid-template-columns:1fr 1fr}.approved-radio-manager .rm-step{flex-basis:43%}.approved-radio-manager .rm-search{min-width:0;width:100%}}
+
+/* Issue #55: visually remove white photo surround while preserving the complete image. */
+.approved-radio-manager .rm-photo{height:310px;overflow:visible;isolation:isolate;background:#102316;border-radius:12px}
+.approved-radio-manager .rm-photo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;mix-blend-mode:multiply;filter:contrast(1.08) drop-shadow(0 9px 12px #0006)}
+/* Independent Identify action and the single staged centre action. */
+.approved-radio-manager .rm-main>button[hidden]{display:none!important}
+.approved-radio-manager .rm-main>button:not([hidden]){display:block;width:100%;min-height:62px;font-size:1.13rem;font-weight:800;border:2px solid #65de86;border-radius:9px;background:linear-gradient(130deg,#228346,#126c38);color:#fff;box-shadow:0 6px 20px #071a0a8c}
+.approved-radio-manager .rm-main>button:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+.approved-radio-manager .rm-advanced #connect{display:none!important}
+.approved-radio-manager .rm-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.approved-radio-manager .rm-actions .rm-disconnect{margin-right:auto;min-width:120px}
+.approved-radio-manager .rm-actions .rm-write,.approved-radio-manager .rm-actions .rm-verify{width:auto;min-width:124px;max-width:175px;padding:8px 12px;min-height:42px;font-size:.8rem}
+.approved-radio-manager .rm-actions .rm-backup{min-width:160px;min-height:42px;font-size:.85rem}
+@media(max-width:700px){.approved-radio-manager .rm-photo{height:265px}.approved-radio-manager .rm-actions{display:grid;grid-template-columns:1fr 1fr}.approved-radio-manager .rm-actions .rm-disconnect{margin-right:0}.approved-radio-manager .rm-actions .rm-backup{grid-column:1/-1}}

@@ -41,3 +41,22 @@ test('five-step design renders accessible actual state instead of invented COM p
  assert.ok(js.includes("search.addEventListener('input'"));
  assert.ok(css.includes('@media(max-width:700px)'));
 });
+
+test('one primary centre control advances Connect, Identify, Read without duplicate Connect',()=>{
+ assert.ok(js.includes("primaryConnect.id='rm-primary-connect'"));
+ assert.ok(js.includes("toolbar.append(disconnect,write,verify)"));
+ assert.ok(!js.includes("toolbar.append(connect,disconnect,write,verify)"));
+ assert.ok(js.includes("primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();}"));
+ assert.ok(js.includes("primaryConnect.hidden=connected"));
+ assert.ok(js.includes("identifyButton.hidden=!connected||identified"));
+ assert.ok(js.includes("read.hidden=!identified"));
+ assert.ok(app.includes("new UV16ReadOnlySession({port:connectionManager.port}).identify()"));
+ assert.ok(css.includes(".rm-advanced #connect{display:none!important}"));
+});
+test('radio image is fully contained with white-background blending and secondary write controls',()=>{
+ assert.ok(css.includes("mix-blend-mode:multiply"));
+ assert.ok(css.includes("object-fit:contain"));
+ assert.ok(css.includes(".rm-actions .rm-write,.approved-radio-manager .rm-actions .rm-verify"));
+ for(const id of ['radio-write-placeholder','radio-verify-write-placeholder'])
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+});
