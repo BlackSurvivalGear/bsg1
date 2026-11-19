@@ -88,7 +88,7 @@ if(page&&original&&editor){
    readSummary.classList.toggle('is-error',failed);
    readSummaryTitle.textContent=success?'✓ '+lines[0]:failed?lines[0]:lines[0]||'';
    readSummaryMeta.textContent=success
-    ?[lines.find(line=>/^Scanned \\d+ memory locations\\.$/.test(line)),lines.find(line=>line.startsWith('Radio firmware:'))].filter(Boolean).join(' · ')
+    ?[lines.find(line=>/^Scanned \d+ memory locations\.$/.test(line)),lines.find(line=>line.startsWith('Radio firmware:'))].filter(Boolean).join(' · ')
     :'';
    readSummaryOutcome.textContent=success
     ?lines.find(line=>/channels added to Channel Editor|retrieved channels already exist/.test(line))||'Channel frequencies retrieved. Modes, tones and power remain unverified.'
