@@ -39,7 +39,7 @@ test('write and verify remain physically disabled',()=>{
 test('five-step design renders accessible actual state instead of invented COM port',()=>{
  assert.ok(js.includes("['Connect Radio','Identify','Read Channels','Edit Channels','Write & Verify']"));
  assert.ok(js.includes("portValue.textContent=connected?'USB serial connected':'Disconnected'"));
- assert.ok(js.includes("fwValue.textContent=identified?'HN5RV01':'Not identified'"));
+ assert.ok(js.includes("fwValue.textContent=!supportsPhysicalRead?'Unsupported':identified?'HN5RV01':'Not identified'"));
  assert.ok(js.includes("connection.classList.toggle('is-identified',identified)"));
  assert.ok(js.includes("search.addEventListener('input'"));
  assert.ok(css.includes('@media(max-width:700px)'));
