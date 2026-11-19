@@ -1,3 +1,4 @@
+import {prepareUV16Cutout} from './radio-photo-cutout.js';
 // Approved Radio Manager presentation. Reuses the existing connected USB and editor controls.
 // The workspace sidebar, serial protocol and channel persistence remain unchanged.
 const $=id=>document.getElementById(id);
@@ -17,6 +18,7 @@ if(page&&original&&editor){
  const photo=document.createElement('div');photo.className='rm-photo';
  const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.decoding='async';img.onerror=()=>{img.hidden=true;};
  photo.append(img);
+ prepareUV16Cutout(img);
  const centre=document.createElement('div');centre.className='rm-main';
  const title=document.createElement('h2');title.className='rm-model';title.textContent=$('model-name')?.textContent||'Radio Manager';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
