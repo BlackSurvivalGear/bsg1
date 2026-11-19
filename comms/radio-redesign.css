@@ -80,3 +80,40 @@
 .approved-radio-manager .rm-actions,.approved-radio-manager .rm-advanced{position:relative;z-index:1}
 @media(max-width:1100px){.approved-radio-manager .rm-photo{height:240px;max-height:240px}}
 @media(max-width:700px){.approved-radio-manager .rm-photo{height:220px;max-height:220px}}
+
+/* Final approved Select → Connect → Identify → Read layout.
+   Only the hero grid is reordered; the sidebar, editor and radio handlers are unchanged. */
+.approved-radio-manager .rm-hero{
+  grid-template-columns:minmax(245px,305px) minmax(300px,1fr) minmax(170px,245px);
+  gap:24px;align-items:stretch
+}
+.approved-radio-manager .rm-status{grid-column:1;grid-row:1;align-self:stretch;display:flex;flex-direction:column}
+.approved-radio-manager .rm-status h3{margin:0 0 10px}
+.approved-radio-manager .rm-model-picker{
+  display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  border-top:0;margin:0 0 14px;padding:0;font-size:.9rem
+}
+.approved-radio-manager .rm-model-picker select{min-width:0;max-width:none;width:100%;min-height:44px}
+.approved-radio-manager .rm-status-label{
+  font-size:1rem;font-weight:750;margin:2px 0 9px;padding-top:13px;
+  border-top:1px solid #304936
+}
+.approved-radio-manager .rm-main{grid-column:2;grid-row:1;align-self:center}
+.approved-radio-manager .rm-main .rm-model{font-size:1.25rem}
+.approved-radio-manager .rm-main .rm-firmware{display:none}
+.approved-radio-manager .rm-photo{
+  grid-column:3;grid-row:1;align-self:center;justify-self:center;
+  height:255px;max-height:255px;max-width:230px;width:100%;overflow:hidden
+}
+@media(max-width:1100px){
+  .approved-radio-manager .rm-hero{grid-template-columns:minmax(215px,280px) minmax(220px,1fr);gap:18px}
+  .approved-radio-manager .rm-status{grid-column:1;grid-row:1}
+  .approved-radio-manager .rm-main{grid-column:2;grid-row:1}
+  .approved-radio-manager .rm-photo{grid-column:1/-1;grid-row:2;height:180px;max-height:180px;max-width:210px}
+}
+@media(max-width:700px){
+  .approved-radio-manager .rm-hero{grid-template-columns:minmax(0,1fr);gap:16px}
+  .approved-radio-manager .rm-status{grid-column:1;grid-row:1}
+  .approved-radio-manager .rm-main{grid-column:1;grid-row:2}
+  .approved-radio-manager .rm-photo{grid-column:1;grid-row:3;height:200px;max-height:200px;max-width:210px}
+}
