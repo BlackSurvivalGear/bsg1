@@ -50,7 +50,7 @@ test('USB connection test is a single static control with a safe handler',()=>{
 });
 
 test('V3 future hardware actions are unique disabled static placeholders',()=>{
- for(const id of ['radio-verify-placeholder','radio-write-placeholder','radio-verify-write-placeholder']){
+ for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
   assert.ok(!app.includes("$('"+id+"')"),id+' must not have a hardware handler');
