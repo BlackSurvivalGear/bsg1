@@ -15,13 +15,14 @@ if(page&&original&&editor){
  }
  const hero=document.createElement('section');hero.className='rm-hero';hero.setAttribute('aria-label','Physical radio');
  const photo=document.createElement('div');photo.className='rm-photo';
- const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.onerror=()=>{img.hidden=true;};
+ const img=document.createElement('img');img.src='../UV%2016%20PRO.png';img.alt='Baofeng UV-16 Pro V2 radio';img.loading='lazy';img.decoding='async';img.onerror=()=>{img.hidden=true;};
  photo.append(img);
  const centre=document.createElement('div');centre.className='rm-main';
  const title=document.createElement('h2');title.className='rm-model';title.textContent=$('model-name')?.textContent||'Radio Manager';
  const firmware=document.createElement('p');firmware.className='rm-firmware';firmware.textContent='Firmware: Not yet identified';
  const readHint=document.createElement('p');readHint.className='rm-read-hint';readHint.textContent='Read the radio’s programmed channels from the physical device.';
- centre.append(title,firmware);
+ const identifyButton=document.createElement('button');identifyButton.type='button';identifyButton.id='radio-identify';identifyButton.className='rm-identify-button';identifyButton.textContent='Identify Radio';identifyButton.disabled=true;
+ centre.append(title,firmware,identifyButton);
  const status=document.createElement('div');status.className='rm-status';
  const heading=document.createElement('h3');heading.textContent='Radio Status';
  const connection=document.createElement('p');connection.className='rm-live-state';connection.textContent='Radio disconnected';
@@ -85,6 +86,8 @@ if(page&&original&&editor){
   firmware.textContent=identified?'Firmware HN5RV01':'Firmware not yet identified';
   connection.textContent=identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
+  identifyButton.disabled=!connected;
+  identifyButton.textContent=identified?'Identify Again':'Identify Radio';
   for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }
