@@ -116,3 +116,21 @@ test('raw capture never returns a partial snapshot after interrupted transfer',a
  await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureRaw:true}),/Simulated missing read block/);
  assert.equal(d.writes.filter(x=>x[0]===0x57).length,0);
 });
+
+test('opt-in CHIRP guard captures exactly three additional read-only blocks',async()=>{
+ const d=device();const result=await new UV16ReadOnlySession({port:d.port}).readMemory({captureRaw:true,captureCHIRPGuard:true});
+ assert.deepEqual(result.chirpGuardCapture.regions.map(x=>x.address),[0x1f00,0x1f40,0x1f80]);
+ assert.equal(result.chirpGuardCapture.regions.every(x=>x.bytesHex.length===128),true);
+ assert.equal(result.chirpGuardCapture.restorable,false);
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,38);
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+});
+test('guard capture requires raw snapshot and fails before any serial bytes',async()=>{
+ const d=device();await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureCHIRPGuard:true}),{code:'INVALID_CAPTURE'});
+ assert.equal(d.writes.length,0);
+});
+test('guard read failure never returns a partial capture or changes write safety',async()=>{
+ const d=device({failAt:0x1f40});
+ await assert.rejects(new UV16ReadOnlySession({port:d.port}).readMemory({captureRaw:true,captureCHIRPGuard:true}),/Simulated missing read block/);
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+});
