@@ -62,6 +62,65 @@ if(page&&original&&editor){
  primaryConnect.onclick=()=>{if(!connect.disabled)connect.click();};
  toolbar.append(disconnect,write,verify);
  centre.append(read,readHint);
+ // The application continues to write the full read result to its existing PRE.
+ // Only its presentation moves to a concise, live summary in this hero.
+ const sourcePreview=$('uv16-read-preview');
+ const readSummary=document.createElement('div');
+ readSummary.className='rm-read-summary';
+ readSummary.setAttribute('role','status');
+ readSummary.setAttribute('aria-live','polite');
+ readSummary.hidden=true;
+ const readSummaryTitle=document.createElement('strong');
+ const readSummaryMeta=document.createElement('p');
+ const readSummaryOutcome=document.createElement('p');
+ readSummary.append(readSummaryTitle,readSummaryMeta,readSummaryOutcome);
+ centre.append(readSummary);
+ // Read-only progress mirrors the existing USB reader's block callbacks.
+ // Never infer progress from elapsed time or send additional commands.
+ const progressPanel=document.createElement('div');
+ progressPanel.className='rm-read-progress';
+ progressPanel.hidden=true;
+ const progressLabel=document.createElement('div');
+ progressLabel.className='rm-read-progress-label';
+ const progressText=document.createElement('span');progressText.textContent='Reading radio memory';
+ const progressPercent=document.createElement('strong');progressPercent.textContent='0%';
+ progressLabel.append(progressText,progressPercent);
+ const progress=document.createElement('progress');
+ progress.max=100;progress.value=0;progress.setAttribute('aria-label','Radio channel read progress');
+ progressPanel.append(progressLabel,progress);
+ centre.insertBefore(progressPanel,readSummary);
+ sourcePreview?.classList.add('rm-source-preview');
+ function refreshReadSummary(){
+   const text=sourcePreview?.textContent.trim()||'';
+   const selected=modelSelector?.value==='uv-16-pro-v2';
+   readSummary.hidden=!selected||!text;
+   if(readSummary.hidden){progressPanel.hidden=true;return;}
+   const lines=text.split('\n').map(line=>line.trim()).filter(Boolean);
+   const success=lines[0]?.startsWith('Read complete');
+   const failed=lines[0]?.startsWith('Read failed');
+   const reading=lines[0]?.startsWith('Reading UV-16');
+   const percentMatch=reading?lines[0]?.match(/(\d{1,3})%/):null;
+   const percent=success?100:percentMatch?Math.min(100,Math.max(0,Number(percentMatch[1]))):0;
+   progressPanel.hidden=!selected||(!reading&&!success);
+   if(!progressPanel.hidden){
+     progress.value=percent;
+     progressPercent.textContent=percent+'%';
+     progressText.textContent=success?'Channel read complete':'Reading radio memory';
+     progressPanel.classList.toggle('is-complete',success);
+   }
+   readSummary.classList.toggle('is-success',success);
+   readSummary.classList.toggle('is-error',failed);
+   readSummaryTitle.textContent=success?'✓ '+lines[0]:failed?lines[0]:lines[0]||'';
+   readSummaryMeta.textContent=success
+    ?[lines.find(line=>/^Scanned \d+ memory locations\.$/.test(line)),lines.find(line=>line.startsWith('Radio firmware:'))].filter(Boolean).join(' · ')
+    :'';
+   readSummaryOutcome.textContent=success
+    ?lines.find(line=>/channels added to Channel Editor|retrieved channels already exist/.test(line))||'Channel frequencies retrieved. Modes, tones and power remain unverified.'
+    :'';
+ }
+ sourcePreview&&new MutationObserver(refreshReadSummary).observe(sourcePreview,{childList:true,characterData:true,subtree:true});
+ modelSelector?.addEventListener('change',refreshReadSummary);
+ refreshReadSummary();
  const backup=document.createElement('button');backup.type='button';backup.className='rm-action rm-backup';backup.textContent='Backup / Restore';
  backup.onclick=()=>{page.querySelector('.radio-editor-file-actions')?.scrollIntoView({behavior:'smooth',block:'center'});};
  toolbar.append(backup);
@@ -70,7 +129,42 @@ if(page&&original&&editor){
  // Selection and physical status come first; the live action stays central and artwork previews on the right.
  hero.append(status,centre,photo);
  const advanced=document.createElement('details');advanced.className='rm-advanced';
- const summary=document.createElement('summary');summary.textContent='Connection settings and diagnostics';advanced.append(summary,original);
+ const summary=document.createElement('summary');summary.textContent='Connection settings and diagnostics';advanced.append(summary);
+ // Keep all underlying diagnostics and settings handlers connected to their original nodes.
+ // Reparent the two pre-existing diagnostics reports instead of recreating their data.
+ const usbPanel=$('usb-diagnostics-panel'),radioPanel=$('radio-diagnostics-panel');
+ const diagnosticGrid=document.createElement('div');diagnosticGrid.className='rm-diagnostic-grid';
+ for(const panel of [usbPanel,radioPanel]){
+   if(!panel)continue;
+   panel.classList.add('rm-diagnostic-card');
+   panel.querySelector('.actions')?.setAttribute('hidden','');
+   panel.querySelector('p')?.setAttribute('hidden','');
+   panel.querySelector('[role="status"]')?.setAttribute('hidden','');
+   diagnosticGrid.append(panel);
+ }
+ const diagnosticToolbar=document.createElement('div');diagnosticToolbar.className='rm-diagnostic-toolbar';
+ const radioSettings=$('radio-settings-open');
+ if(radioSettings)diagnosticToolbar.append(radioSettings);
+ const copyAll=document.createElement('button');copyAll.type='button';
+ copyAll.className='rm-copy-diagnostics';copyAll.textContent='Copy Diagnostics';
+ const copyFeedback=document.createElement('span');copyFeedback.className='rm-copy-feedback';
+ copyFeedback.setAttribute('role','status');
+ copyAll.onclick=async()=>{
+   // Refresh the existing read-only reports using their original handlers.
+   $('usb-refresh')?.click();$('radio-refresh')?.click();
+   const text=['USB Diagnostics',$('usb-diagnostics-info')?.textContent||'',
+               'Radio Diagnostics',$('radio-diagnostics-info')?.textContent||''].join('\n\n');
+   try{await navigator.clipboard.writeText(text);copyFeedback.textContent='Copied both diagnostic reports';}
+   catch{copyFeedback.textContent='Clipboard unavailable';}
+ };
+ diagnosticToolbar.append(copyAll,copyFeedback);
+ advanced.append(diagnosticGrid,diagnosticToolbar,original);
+ original.hidden=true;
+ advanced.addEventListener('toggle',()=>{
+   if(!advanced.open)return;
+   for(const panel of [usbPanel,radioPanel])if(panel)panel.open=true;
+   $('usb-refresh')?.click();$('radio-refresh')?.click();
+ });
  page.insertBefore(steps,editor);page.insertBefore(hero,editor);page.insertBefore(toolbar,editor);page.insertBefore(advanced,editor);
  const search=document.createElement('input');search.type='search';search.className='rm-search';search.placeholder='Search channels…';
  search.setAttribute('aria-label','Search channels');

@@ -175,3 +175,38 @@ test('selected radio name is shown over the centre action and radio is not separ
  assert.ok(!js.includes("identifyButton=document.createElement"));
  assert.ok(!app.includes("identifiedReadSession"));
 });
+
+test('channel read result is mirrored below the main Read action without modifying USB protocol',()=>{
+ assert.ok(js.includes("sourcePreview=$('uv16-read-preview')"));
+ assert.ok(js.includes("centre.insertBefore(progressPanel,readSummary)"));
+ assert.ok(js.includes("centre.append(readSummary)"));
+ assert.ok(js.includes("sourcePreview?.classList.add('rm-source-preview')"));
+ assert.ok(css.includes('#uv16-read-preview.rm-source-preview{display:none!important}'));
+ assert.ok(js.includes("readSummaryTitle.textContent=success?'✓ '+lines[0]"));
+ assert.ok(js.includes("lines.find(line=>/^Scanned \\d+ memory locations\\.$/.test(line))"));
+ assert.ok(js.includes("lines.find(line=>line.startsWith('Radio firmware:'))"));
+});
+test('progress tracks existing physical reader percentage only, and hides on failure or model change',()=>{
+ assert.ok(js.includes("new MutationObserver(refreshReadSummary).observe(sourcePreview"));
+ assert.ok(js.includes("progress.max=100;progress.value=0"));
+ assert.ok(js.includes("progress.setAttribute('aria-label','Radio channel read progress')"));
+ assert.ok(js.includes("lines[0]?.match(/(\\d{1,3})%/)"));
+ assert.ok(js.includes("const percent=success?100:percentMatch?Math.min(100,Math.max(0,Number(percentMatch[1]))):0"));
+ assert.ok(js.includes("progressPanel.hidden=!selected||(!reading&&!success)"));
+ assert.ok(js.includes("if(readSummary.hidden){progressPanel.hidden=true;return;}"));
+ assert.ok(css.includes('.rm-read-progress progress::-webkit-progress-value'));
+ assert.ok(css.includes('.rm-read-progress progress::-moz-progress-bar'));
+ assert.ok(app.includes("onProgress:({blocksRead,totalBlocks})"));
+});
+test('diagnostics show centered paired reports with one copy action and preserve handlers',()=>{
+ assert.ok(js.includes("diagnosticGrid.className='rm-diagnostic-grid'"));
+ assert.ok(js.includes("diagnosticGrid.append(panel)"));
+ assert.ok(js.includes("advanced.append(diagnosticGrid,diagnosticToolbar,original)"));
+ assert.ok(js.includes("copyAll.textContent='Copy Diagnostics'"));
+ assert.ok(js.includes("navigator.clipboard.writeText(text)"));
+ assert.ok(js.includes("original.hidden=true"));
+ assert.ok(css.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+ assert.ok(css.includes('.rm-diagnostic-card>.actions,'));
+ assert.ok(app.includes("usbRefresh.onclick=refreshUSBDiagnostics"));
+ assert.ok(app.includes("$('radio-refresh').onclick=refreshRadioDiagnostics"));
+});
