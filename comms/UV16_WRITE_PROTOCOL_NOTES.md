@@ -23,3 +23,15 @@
 
 ### Threat model
 A write command built from frequency-only editor rows could erase unknown per-channel flags or settings. A technically successful write command is not proof of a recoverable or correctly configured radio. The existing read-only protocol is the protected baseline.
+
+## PR #67: offline frequency field investigation (no device write)
+User-supplied HN5RV01 raw-read-region snapshot and matching local editor JSON were checked **offline**, without committing either file to this repository. Evidence:
+- Snapshot integrity check matched the declared non-cryptographic FNV-1a value.
+- Five programmed frequency pairs match the editor's corresponding slots (human-visible memories M03–M07, zero-based slots 2–6).
+- Two slots were all `0xff`, while 121 additional records had first byte `0xff` **but retained other non-`0xff` bytes**. These unused records must not be filled using a default or blank template.
+- In the five populated records, the first 4 bytes encode RX and the next 4 TX as reverse-byte-order packed decimal (BCD), scaled by 100,000 to MHz. The evidence supports an exact 0.00001 MHz (10 Hz) representation for the observed frequencies.
+- Fields at offsets 8–15, including the final byte, are **not** confirmed as power, tones, bandwidth, flags or checksum. Their meanings remain unverified.
+
+New `uv16-offline-frequency-codec.js` is an isolated experiment: it supports encode/decode round trips for four-byte frequency BCD and hypothetical single-record diffs only when the caller supplies an existing populated slot and its exact expected RX and TX frequencies. The result lists the changed absolute byte offsets, preserves offsets 8–15, **does not emit a full writable image or hardware protocol frame**, and explicitly declares hardware write disabled. Automated tests use **synthetic records**, not the user's personal snapshot.
+
+**NOT A VERIFIED RADIO WRITER:** These offline BCD results do not establish the write opcode, channel-option mapping, erase/commit requirements, full recoverability, slot assignment for editor rows or independent physical verification. No code in this PR opens a serial port, changes device memory or enables Write/Verify. Never treat the hypothetical diff as a write-ready payload.
