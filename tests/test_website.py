@@ -45,6 +45,16 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('id="radio-write-placeholder" type="button" disabled', comms)
         self.assertIn('id="restore">Restore JSON', comms)
 
+    def test_comms_programming_banner(self):
+        html = (ROOT/'index.html').read_text()
+        css = (ROOT/'style.css').read_text()
+        self.assertTrue((ROOT/'BSG Comms Radio Programming Banner.png').is_file())
+        self.assertIn('class="comms-banner" href="./comms/"', html)
+        self.assertIn('src="./BSG%20Comms%20Radio%20Programming%20Banner.png"', html)
+        self.assertIn('loading="lazy" decoding="async"', html)
+        self.assertIn('.comms-banner img{display:block;width:100%;height:100%;object-fit:contain}', css)
+        self.assertNotIn('class="comms-panel"', html)
+
     def test_comms_logo_uses_existing_asset(self):
         html = (ROOT/'comms'/'index.html').read_text()
         css = (ROOT/'comms'/'style.css').read_text()
