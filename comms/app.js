@@ -198,6 +198,70 @@ guardRead.onclick=async()=>{
   $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
  }
 };
+realWrite.onclick=async()=>{
+ if(hardwareBusy||pendingHardwarePlan||!currentFullMainCapture||!radioBackupExported||
+    !canReadSelectedRadio()||liveSlot.value==='')return;
+ let plan;
+ try{plan=prepareUV16HardwareChange({capture:currentFullMainCapture,
+    slot:Number(liveSlot.value),newRxMHz:Number(liveRx.value)});}
+ catch(error){guardStatus.textContent='Write blocked: '+error.message;return;}
+ const message='PHYSICAL RADIO WRITE — DESIGNATED TEST UV-16 ONLY.\\nMemory M'+
+  (plan.slot+1)+' RX '+plan.oldRxMHz+' → '+plan.newRxMHz+' MHz. TX remains '+plan.txMHz+
+  ' MHz.\\nHN5RV01 write has never been proven; this may disable your test radio. Recovery is not verified.\\nType WRITE to authorise ONE hardware block.';
+ if(prompt(message)!=='WRITE')return;
+ if(!confirm('LAST CONFIRMATION: Send ONE real 16-byte memory write to the attached UV-16?'))return;
+ pendingHardwarePlan=plan;
+ hardwareBusy=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Checking live radio identity, original channel and auxiliary memory before ONE hardware write…';
+ try{
+  const result=await writeUV16OneChannel({port:connectionManager.port,capture:currentFullMainCapture,
+    slot:plan.slot,newRxMHz:plan.newRxMHz,consent:true});
+  guardStatus.textContent='Radio acknowledged one physical write at memory M'+(plan.slot+1)+
+    '. NOT VERIFIED. Disconnect, power-cycle the test radio, reconnect USB, then select Verify Write. Do not repeat Write.';
+  logRadioEvent('One HN5RV01 hardware memory block ACK received; readback pending');
+ }catch(error){
+  guardStatus.textContent='Hardware write attempt stopped: '+error.message+
+   '\\nPhysical radio state may be UNKNOWN. Reconnect and use Verify Write; do not retry Write.';
+  addDiagnostic('HN5RV01 write stopped: '+error.message);
+ }finally{
+  hardwareBusy=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
+realVerify.onclick=async()=>{
+ if(hardwareBusy||!pendingHardwarePlan||!canReadSelectedRadio())return;
+ hardwareBusy=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Reading entire radio memory to verify the attempted hardware change…';
+ try{
+  const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+    captureRaw:true,captureCHIRPGuard:true,captureFullMain:true});
+  const report=compareUV16HardwareReadback({plan:pendingHardwarePlan,capture:result.fullMainCapture});
+  if(report.verified){
+   guardStatus.textContent='VERIFIED: one memory RX change present. All 6144 main bytes and five auxiliary blocks match the expected state. Export the latest radio capture before any further changes.';
+   pendingHardwarePlan=null;
+   currentFullMainCapture=result.fullMainCapture;
+   currentReadSnapshot=result.rawSnapshot;
+   currentGuardCapture=result.chirpGuardCapture;
+   radioBackupExported=false;
+   populateLiveSlots();snapshotExport.disabled=false;
+   logRadioEvent('One-channel HN5RV01 hardware write independently verified by full readback');
+  }else{
+   guardStatus.textContent='VERIFY FAILED: '+(report.mainMatches?'Main memory matched. ':'Main memory differs. ')+
+    (report.auxiliaryMatches?'Auxiliary matched.':'Auxiliary differs.')+
+    ' No further write until the mismatch has been examined.';
+   addDiagnostic('UV-16 hardware write readback mismatch; write remains locked');
+  }
+ }catch(error){
+  guardStatus.textContent='Verify failed: '+error.message+
+   '. Disconnect, power-cycle, reconnect and use Verify Write again. Do NOT write again.';
+ }finally{
+  hardwareBusy=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
+
 let sampleReading=false;
 function canReadSelectedRadio(){
   return connectionManager.state==='connected'&&(
