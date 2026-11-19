@@ -6,7 +6,7 @@ function bytes(v,n){return v instanceof Uint8Array&&v.length===n;}
 function equal(a,b){return a.length===b.length&&a.every((v,i)=>v===b[i]);}
 function fail(s){throw Error(s);}
 function rangesSafe(ranges){
- if(!Array.isArray(ranges)||!ranges.length||ranges.some(r=>!Array.isArray(r)||r.length!==2||!Number.isInteger(r[0])||!Number.isInteger(r[1])||r[0]<0||r[1]>0x2000||r[0]>=r[1]||r[0]%16||r[1]%16))fail('Invalid reference ranges');
+ if(!Array.isArray(ranges)||!ranges.length||ranges.some(r=>!Array.isArray(r)||r.length!==2||!Number.isInteger(r[0])||!Number.isInteger(r[1])||r[0]<0||r[1]>0x2000||r[0]>=r[1]||r[0]%8||r[1]%8))fail('Invalid reference ranges');
  return ranges.map(r=>Object.freeze([...r]));
 }
 /**
