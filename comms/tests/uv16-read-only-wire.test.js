@@ -12,7 +12,7 @@ const rows=[
 '00 25 03 45 00 25 03 45 00 00 00 00 00 00 00 44',
 'ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff'
 ];
-function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,extraSlot=-1}={}){
+function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,extraSlot=-1,rejectAckAt=-1}={}){
  const chunks=[];let writes=[];let magic=0;let idAck=false;
  const queue=arr=>chunks.push(Uint8Array.from(arr));
  const port={
@@ -29,6 +29,7 @@ function device({badHeader=false,badFirmware=false,badIdentity=false,failAt=-1,e
     if(addr===0)for(let i=0;i<4;i++)body.set(fromHex(rows[i]),i*16);
     if(addr===64)for(let i=0;i<4;i++)body.set(fromHex(rows[i+4]),i*16);
     if(extraSlot>=8&&addr===Math.floor(extraSlot/4)*64)body.set(fromHex(rows[0]),(extraSlot%4)*16);
+    if(addr===rejectAckAt){queue([0x15]);return;}
     queue([6,badHeader?0x59:0x58,data[1],data[2],64,...body]);return;
    }
    if(data.length===1&&data[0]===6)return;
@@ -128,4 +129,24 @@ test('failed identification closes session and cannot continue into read',async(
  const d=device({badFirmware:true}),session=new UV16ReadOnlySession({port:d.port});
  await assert.rejects(session.identify(),{code:'WRONG_FIRMWARE'});
  await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
+});
+
+test('reports exact failing block and byte without leaking payloads or importing partial channels',async()=>{
+ const d=device({rejectAckAt:0x1fc0}),session=new UV16ReadOnlySession({port:d.port});
+ await session.identify();
+ await assert.rejects(session.readMemory(),error=>{
+   assert.equal(error.code,'BAD_ACK');
+   assert.equal(error.address,0x1fc0);
+   assert.equal(error.phase,'ack');
+   assert.equal(error.expected,0x06);
+   assert.equal(error.actual,0x15);
+   assert.match(error.message,/0x1FC0/);
+   assert.match(error.message,/received 0x15/);
+   return true;
+ });
+ assert.equal(d.writes.some(x=>x[0]===0x57),false);
+});
+test('read-only frame corruption names the failing address',async()=>{
+ await assert.rejects(new UV16ReadOnlySession({port:device({badHeader:true}).port}).readMemory(),
+   error=>error.code==='BAD_FRAME'&&error.address===0x1e80&&/0x1E80/.test(error.message));
 });
