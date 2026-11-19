@@ -166,7 +166,7 @@ test('single model-aware read control replaces all legacy editor read actions',(
  assert.ok(app.includes('function refreshReadButton()'));
  assert.ok(app.includes("radioRead.textContent='Read '"));
  assert.ok(app.includes("radioRead.onclick=async()=>"));
- assert.ok(app.includes('readUV16WebsiteSample({connection:connectionManager,model,consent:true})'));
+ assert.ok(app.includes('readUV16WebsiteSample({connection:connectionManager,model,consent:true,'));
  assert.ok(app.includes('appendSampleRows(channels,additions)'));
  assert.ok(html.includes('id="radio-write-placeholder" type="button" disabled'));
 });
