@@ -54,7 +54,7 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn('topbar.append(homeLink,heading)', shell)
         self.assertNotIn('<header>', html)
         self.assertNotIn('Tactical%20BSG COMMS%20Radio%20Emblem.png', html)
-        self.assertIn('.app-sidebar .sidebar-logo-home img', css)
+        self.assertIn('.workspace-topbar .workspace-home-logo img', css)
 
     def test_comms_watermark_uses_existing_gold_logo(self):
         css = (ROOT/'comms'/'style.css').read_text()
