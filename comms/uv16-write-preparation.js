@@ -1,6 +1,6 @@
 // Offline write-preparation only. Do NOT add a radio command or encoder here.
-// The verified UV-16 reader returns frequency pairs, not a complete raw image.
-// Consequently no safe byte-for-byte write or restore is currently possible.
+// The reader now optionally exports captured raw read regions, not a complete verified
+// radio image. These bytes are NOT restorable without an independently verified writer.
 import {normaliseChannel} from './channels.js';
 import {UV16_MEMORY_SLOTS} from './uv16-read-only-wire.js';
 
@@ -9,7 +9,7 @@ export const WRITE_PREP_MODEL='uv-16-pro-v2';
 
 const freezeEntries=entries=>Object.freeze(entries.map(entry=>Object.freeze(entry)));
 const fixedBlockers=Object.freeze([
- 'A complete, restorable raw radio-memory backup is unavailable: the existing reader returns frequencies only.',
+ 'A complete, restorable raw radio-memory backup is unavailable: the captured read regions are not a verified restorable hardware image.',
  'A firmware-matched UV-16 write encoder and reserved-field mapping have not been verified.',
  'Physical write, readback verification and interruption recovery are not implemented.'
 ]);
@@ -64,7 +64,7 @@ export function formatUV16WritePlan(plan){
   'UV-16 Pro V2 — OFFLINE WRITE PREPARATION (NO RADIO COMMANDS)',
   'Hardware write: BLOCKED',
   'Editor channels: '+plan.editorCount+' · Validated: '+plan.validatedCount+' / '+plan.radioCapacity+' capacity',
-  'Memory slots: not assigned; raw radio memory not backed up',
+  'Memory slots: not assigned; optional captured read regions are NOT a restorable backup',
   ...plan.issues.map(issue=>'Check: '+issue),
   ...plan.blockers.map(blocker=>'Blocker: '+blocker),
   'Your current editor channels may be backed up as JSON. This is NOT a restorable radio-memory image.'
