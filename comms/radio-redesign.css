@@ -171,3 +171,27 @@
   .approved-radio-manager .rm-diagnostic-grid{grid-template-columns:minmax(0,1fr);padding:12px}
   .approved-radio-manager .rm-diagnostic-grid .rm-diagnostic-card>.usb-diagnostics-info{min-height:110px;max-height:180px}
 }
+
+/* Hardware-backed channel import progress. Driven by the existing 128-slot reader. */
+.approved-radio-manager .rm-read-progress{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+  border:1px solid #38674a;border-radius:10px;padding:12px 14px;background:#102b1b
+}
+.approved-radio-manager .rm-read-progress[hidden]{display:none!important}
+.approved-radio-manager .rm-read-progress-label{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  color:#d1e6d3;font-size:.85rem
+}
+.approved-radio-manager .rm-read-progress-label strong{font-variant-numeric:tabular-nums;color:#8ef2a1}
+.approved-radio-manager .rm-read-progress progress{
+  display:block;width:100%;height:15px;appearance:none;-webkit-appearance:none;
+  overflow:hidden;border:1px solid #406c4c;border-radius:999px;background:#0a1a11
+}
+.approved-radio-manager .rm-read-progress progress::-webkit-progress-bar{background:#0a1a11}
+.approved-radio-manager .rm-read-progress progress::-webkit-progress-value{
+  background:linear-gradient(90deg,#1f7d45,#65df7c);border-radius:999px;transition:width .15s ease
+}
+.approved-radio-manager .rm-read-progress progress::-moz-progress-bar{
+  background:linear-gradient(90deg,#1f7d45,#65df7c);border-radius:999px
+}
+.approved-radio-manager .rm-read-progress.is-complete{border-color:#4b9762}
