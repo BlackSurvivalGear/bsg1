@@ -9,6 +9,8 @@ const fail=(message,code)=>{throw new UV16ReadError(message,code);};
 const MAGIC=[0x50,0xbb,0xff,0x20,0x12,0x07,0x25];
 const ID=[0xaa,0x30,0x76,0x04,0,5,0x20,0xdd];
 const AUX=[0x1e80,0x1ec0,0x1fc0];
+const CHIRP_GUARD_AUX=[0x1f00,0x1f40,0x1f80];
+const toHex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 export const UV16_MEMORY_SLOTS=128;
 const BLOCK_SIZE=64;
 const CHANNEL_BYTES=16;
@@ -44,7 +46,7 @@ export class UV16ReadOnlySession {
   }
   async #receive(count,signal){abortCheck(signal);return this.#rx.read(count,{signal});}
   async #readBlock(address,signal){
-    if(![...AUX,...MEMORY_ADDRESSES].includes(address))fail('Address denied','ADDRESS_DENIED');
+    if(![...AUX,...CHIRP_GUARD_AUX,...MEMORY_ADDRESSES].includes(address))fail('Address denied','ADDRESS_DENIED');
     await this.#command([0x53,address>>8,address&255,64],signal);
     const first=(await this.#receive(1,signal))[0];
     if(first!==6&&first!==0x58)fail('Invalid block ACK','BAD_ACK');
@@ -54,9 +56,10 @@ export class UV16ReadOnlySession {
     await this.#command([6],signal);
     return block;
   }
-  async readMemory({signal,onProgress,captureRaw=false}={}){
+  async readMemory({signal,onProgress,captureRaw=false,captureCHIRPGuard=false}={}){
     if(this.#used)fail('Session already used','SESSION_USED');
     this.#used=true;
+    if(captureCHIRPGuard&&!captureRaw)fail('CHIRP guard capture requires raw snapshot','INVALID_CAPTURE');
     try{
       for(const byte of MAGIC)await this.#command([byte],signal);
       if(!same([...await this.#receive(1,signal)],[6]))fail('Magic rejected','BAD_ACK');
@@ -72,6 +75,12 @@ export class UV16ReadOnlySession {
           const firmware=String.fromCharCode(...block.slice(48,55));
           if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
         }
+      }
+      // Extra read-only evidence for the BF-F8HP guard. No additional command types.
+      const chirpGuard=captureCHIRPGuard?[]:null;
+      if(chirpGuard)for(const address of CHIRP_GUARD_AUX){
+        const block=await this.#readBlock(address,signal);
+        chirpGuard.push(Object.freeze({address,bytesHex:toHex(block)}));
       }
       const raw=new Uint8Array(MEMORY_END);
       let blocksRead=0;
@@ -89,7 +98,8 @@ export class UV16ReadOnlySession {
       }
       // Capture only after the complete, validated read. No additional radio commands.
       const rawSnapshot=captureRaw?captureUV16ReadRegions({firmware:'HN5RV01',channelBytes:raw,auxiliary}):null;
-      return {firmware:'HN5RV01',channels,capacity:UV16_MEMORY_SLOTS,readOnly:true,hardwareVerified:false,rawSnapshot};
+      return {firmware:'HN5RV01',channels,capacity:UV16_MEMORY_SLOTS,readOnly:true,hardwareVerified:false,rawSnapshot,
+        chirpGuardCapture:chirpGuard?Object.freeze({format:'bsg-uv16-chirp-guard-capture-v1',firmware:'HN5RV01',readOnly:true,restorable:false,regions:Object.freeze(chirpGuard)}):null};
     }finally{this.close();}
   }
 }
