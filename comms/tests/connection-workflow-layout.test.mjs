@@ -49,12 +49,15 @@ test('USB connection test is a single static control with a safe handler',()=>{
  assert.ok(app.includes('usbDiagnosticsPanel.open=true'));
 });
 
-test('V3 future hardware actions are unique disabled static placeholders',()=>{
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
+test('physical Write and Verify actions exist once and require real handlers',()=>{
+ for(const id of ['radio-write','radio-verify-write']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
-  assert.ok(!app.includes("$('"+id+"')"),id+' must not have a hardware handler');
  }
+ assert.ok(app.includes("realWrite.onclick=async()=>"));
+ assert.ok(app.includes("realVerify.onclick=async()=>"));
+ assert.ok(app.includes('pendingHardwarePlan'));
+ assert.ok(app.includes("writeUV16OneChannel({port:connectionManager.port"));
 });
 test('V3 keeps existing working controls and avoids duplicate physical actions',()=>{
  for(const id of ['connect','usb-test','radio-read','radio-settings-open','usb-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
@@ -92,12 +95,12 @@ test('compact Channel Editor keeps radio actions centered and file actions after
  assert.ok(!html.includes('id="radio-read-placeholder"'));
  assert.ok(!html.includes('id="radio-backup-placeholder"'));
  assert.ok(!html.includes('id="radio-restore-placeholder"'));
- for(const id of ['radio-read','radio-write-placeholder','radio-verify-write-placeholder','add','import','export','backup','restore']){
+ for(const id of ['radio-read','radio-write','radio-verify-write','add','import','export','backup','restore']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
  assert.ok(editor.includes('class="radio-editor-program-actions actions"'));
- assert.ok(editor.indexOf('id="radio-read"')<editor.indexOf('id="radio-write-placeholder"'));
- assert.ok(editor.indexOf('id="radio-write-placeholder"')<editor.indexOf('id="radio-verify-write-placeholder"'));
+ assert.ok(editor.indexOf('id="radio-read"')<editor.indexOf('id="radio-write"'));
+ assert.ok(editor.indexOf('id="radio-write"')<editor.indexOf('id="radio-verify-write"'));
  assert.ok(editor.indexOf('id="channels"')<editor.indexOf('id="add"'));
  assert.ok(editor.indexOf('id="add"')<editor.indexOf('id="import"'));
  assert.ok(editor.indexOf('id="import"')<editor.indexOf('id="export"'));
@@ -106,12 +109,12 @@ test('compact Channel Editor keeps radio actions centered and file actions after
  assert.ok(app.includes('radioRead.onclick=async()=>'));
 });
 
-test('programming actions use prominent distinct colours while preserving disabled hardware controls',()=>{
+test('programming actions use prominent distinct colours with guarded enabling',()=>{
  const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- for(const fragment of ['#radio-read{background:#17633f','#radio-read:disabled{background:#17402c','#radio-write-placeholder:disabled{background:#483d19','#radio-verify-write-placeholder:disabled{background:#263547','font-weight:800','min-height:52px']){
+ for(const fragment of ['#radio-read{background:#17633f','#radio-read:disabled{background:#17402c','#radio-write:disabled{background:#483d19','#radio-verify-write:disabled{background:#263547','font-weight:800','min-height:52px']){
   assert.ok(css.includes(fragment),fragment);
  }
- for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
+ for(const id of ['radio-write','radio-verify-write']){
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
  }
  assert.ok(app.includes('radioRead.onclick=async()=>'));
@@ -158,5 +161,5 @@ test('single model-aware read control replaces all legacy editor read actions',(
  assert.ok(app.includes("radioRead.onclick=async()=>"));
  assert.ok(app.includes('readUV16WebsiteSample({connection:connectionManager,model,consent:true,'));
  assert.ok(app.includes('appendSampleRows(channels,additions)'));
- assert.ok(html.includes('id="radio-write-placeholder" type="button" disabled'));
+ assert.ok(html.includes('id="radio-write" type="button" disabled'));
 });
