@@ -36,8 +36,8 @@ test('write and verify remain physically disabled',()=>{
  assert.ok(!js.includes('removeAttribute(\'disabled\')'));
  assert.ok(!js.includes('writeMemory('));
 });
-test('five-step design renders accessible actual state instead of invented COM port',()=>{
- assert.ok(js.includes("['Connect Radio','Identify','Read Channels','Edit Channels','Write & Verify']"));
+test('four-step design renders accessible actual state instead of invented COM port',()=>{
+ assert.ok(js.includes("['Connect Radio','Read Channels','Edit Channels','Write & Verify']"));
  assert.ok(js.includes("portValue.textContent=connected?'USB serial connected':'Disconnected'"));
  assert.ok(js.includes("fwValue.textContent=!supportsPhysicalRead?'Unsupported':identified?'HN5RV01':'Not identified'"));
  assert.ok(js.includes("connection.classList.toggle('is-identified',identified)"));
@@ -138,13 +138,25 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
 
-test('BSG logo is the accessible direct link to central homepage',()=>{
- assert.ok(!html.includes('class="bsg-home-link"'));
- assert.ok(!html.includes('← BSG CENTRAL DASHBOARD'));
- assert.match(html,/<a class="bsg-logo-home" href="https:\/\/blacksurvivalgear\.github\.io\/bsg1\/" aria-label="Return to BSG central homepage"/);
- assert.match(html,/<a class="bsg-logo-home"[^>]*><img src="\.\.\/BSG%20GOLD%20LOGO\.png"/);
+test('global header removed; BSG crest navigates home from sidebar',()=>{
+ assert.ok(!html.includes('<body><header>'));
+ assert.ok(!html.includes('<header>'));
+ assert.ok(shell.includes("homeLink.className='bsg-logo-home sidebar-logo-home'"));
+ assert.ok(shell.includes("homeLink.href='https://blacksurvivalgear.github.io/bsg1/'"));
+ assert.ok(shell.includes("homeLogo.src='../BSG%20GOLD%20LOGO.png'"));
+ assert.ok(shell.includes("homeLink.setAttribute('aria-label','Return to BSG central homepage')"));
+ assert.ok(shell.indexOf('sidebar.append(homeLink)')<shell.indexOf('sidebar.append(brand)'));
  const styles=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- assert.ok(styles.includes('header .bsg-logo-home:focus-visible'));
+ assert.ok(styles.includes('.app-sidebar .sidebar-logo-home:focus-visible'));
+ assert.ok(styles.includes('.app-shell{min-height:100vh}'));
+});
+test('radio workflow has four steps, Read completes after full channel scan',()=>{
+ assert.ok(js.includes("['Connect Radio','Read Channels','Edit Channels','Write & Verify']"));
+ assert.ok(!js.includes("['Connect Radio','Identify','Read Channels'"));
+ assert.ok(js.includes('[[1,connected],[2,readComplete],[3,false]]'));
+ assert.ok(js.includes('steps.querySelector(\'[data-step="4"]\')'));
+ const workspace=readFileSync(new URL('../workspace.js',import.meta.url),'utf8');
+ assert.ok(workspace.includes('Connect, read and edit physical radio channels'));
 });
 test('internal Dashboard menu removed; Radio Manager is default and legacy hashes resolve safely',async()=>{
  const {WORKSPACES,DEFAULT_WORKSPACE,validWorkspace,workspaceFromHash}=await import('../workspace.js');

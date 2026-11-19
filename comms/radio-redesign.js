@@ -9,7 +9,7 @@ const editor=page?.querySelector('.radio-editor-card');
 if(page&&original&&editor){
  page.classList.add('approved-radio-manager');
  const steps=document.createElement('div');steps.className='rm-steps';
- for(const [i,name] of ['Connect Radio','Identify','Read Channels','Edit Channels','Write & Verify'].entries()){
+ for(const [i,name] of ['Connect Radio','Read Channels','Edit Channels','Write & Verify'].entries()){
   const step=document.createElement('div');step.className='rm-step';step.dataset.step=String(i+1);
   const number=document.createElement('span');number.className='rm-step-number';number.textContent=String(i+1);
   const label=document.createElement('span');label.textContent=name;step.append(number,label);
@@ -119,10 +119,11 @@ if(page&&original&&editor){
   readHint.textContent=!supportsPhysicalRead?'UV-32 and UV-5R physical identification and memory reading are not yet implemented.'
    :!connected?'Connect the physical radio using its USB programming cable.'
    :'Read the radio’s channels. Firmware HN5RV01 is identified during the same complete read.';
-  for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
+  const readComplete=connected&&identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'));
+  for(const [n,done] of [[1,connected],[2,readComplete],[3,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }
-  steps.querySelector('[data-step="5"]')?.classList.add('is-locked');
+  steps.querySelector('[data-step="4"]')?.classList.add('is-locked');
  }
  const statusObserver=new MutationObserver(refresh);
  for(const el of [$('usb-indicator'),$('radio-indicator'),$('model-name'),$('uv16-read-preview'),$('count')]){

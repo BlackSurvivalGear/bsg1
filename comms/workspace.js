@@ -1,5 +1,5 @@
 export const WORKSPACES=Object.freeze([
- {id:'radios',title:'Radio Manager',group:'Workspace',description:'Connect, identify, read and edit physical radio channels',ready:true},
+ {id:'radios',title:'Radio Manager',group:'Workspace',description:'Connect, read and edit physical radio channels',ready:true},
  {id:'repeaters',title:'Repeaters',group:'Discover',description:'UK CSV repeater search',ready:true},
  {id:'sdr',title:'Global SDR',group:'Discover',description:'Public online receiver directories',ready:true},
  {id:'frequencies',title:'Frequencies',group:'Discover',description:'UK band and service frequency reference',ready:true},
