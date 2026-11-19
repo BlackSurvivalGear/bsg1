@@ -53,6 +53,21 @@ export class UV16ReadOnlySession {
     await this.#command([6],signal);
     return block;
   }
+  async #identifyHandshake(signal){
+      await this.#identifyHandshake(signal);
+  }
+  async identify({signal}={}){
+    if(this.#used)fail('Session already used','SESSION_USED');
+    this.#used=true;
+    try{
+      await this.#identifyHandshake(signal);
+      // Read only the already allowlisted firmware-information block.
+      const block=await this.#readBlock(0x1ec0,signal);
+      const firmware=String.fromCharCode(...block.slice(48,55));
+      if(firmware!=='HN5RV01')fail('Unexpected firmware','WRONG_FIRMWARE');
+      return Object.freeze({firmware,model:'uv-16-pro-v2',readOnly:true,hardwareVerified:false});
+    }finally{this.close();}
+  }
   async readMemory({signal,onProgress}={}){
     if(this.#used)fail('Session already used','SESSION_USED');
     this.#used=true;
