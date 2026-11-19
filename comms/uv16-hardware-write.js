@@ -10,13 +10,16 @@ const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
 const fromHex=s=>Uint8Array.from(s.match(/../g),x=>parseInt(x,16));
 const same=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
 const fail=s=>{throw Error(s);};
-export function prepareUV16HardwareChange({capture,slot,newRxMHz}={}){
+function validateCompleteRead(capture){
  if(capture?.format!=='bsg-uv16-full-main-read-v1'||capture.firmware!=='HN5RV01'||
     capture.readOnly!==true||capture.restorable!==false||capture.main?.start!==0||
     capture.main?.length!==6144||!/^[0-9a-f]{12288}$/i.test(capture.main.bytesHex??'')||
     !Array.isArray(capture.auxiliary)||capture.auxiliary.length!==5||
     !AUX.every((address,i)=>capture.auxiliary[i]?.address===address&&/^[0-9a-f]{128}$/i.test(capture.auxiliary[i]?.bytesHex??'')))
    fail('Complete HN5RV01 full-read evidence required');
+}
+export function prepareUV16HardwareChange({capture,slot,newRxMHz}={}){
+ validateCompleteRead(capture);
  if(!Number.isInteger(slot)||slot<0||slot>=128)fail('Invalid radio memory');
  const main=fromHex(capture.main.bytesHex);
  // Existing validated BCD codec requires a read-region snapshot, but full-read
@@ -89,15 +92,41 @@ export async function writeUV16OneChannel({port,capture,slot,newRxMHz,consent=fa
 }
 export function compareUV16HardwareReadback({plan,capture}={}){
  if(plan?.type!=='HN5RV01_SINGLE_RX_CHANGE')fail('No prepared hardware change');
- // Strictly validate the new read, and ensure every byte outside the one slot
- // remains exactly equal to the pre-write capture.
- prepareUV16HardwareChange({capture,slot:plan.slot,newRxMHz:plan.oldRxMHz});
- const before=fromHex(plan.capturedMainHex),after=fromHex(capture.main.bytesHex);
- const changed=fromHex(plan.afterHex),offset=plan.slot*16;
- before.set(changed,offset);
- const mainMatches=same(before,after);
- const auxiliaryMatches=AUX.every((addr,i)=>capture.auxiliary[i].address===addr&&
-  capture.auxiliary[i].bytesHex.toLowerCase()===plan.auxiliary[i].bytesHex);
- return Object.freeze({verified:mainMatches&&auxiliaryMatches,mainMatches,auxiliaryMatches,
-  changedSlot:plan.slot});
+ // Validation must NOT call prepareUV16HardwareChange using the original RX:
+ // a no-op cannot pass the write planner's "must change RX" rule.
+ validateCompleteRead(capture);
+ if(!Number.isInteger(plan.slot)||plan.slot<0||plan.slot>=128||
+    !/^[0-9a-f]{12288}$/i.test(plan.capturedMainHex??'')||
+    !/^[0-9a-f]{32}$/i.test(plan.beforeHex??'')||
+    !/^[0-9a-f]{32}$/i.test(plan.afterHex??'')||
+    !Array.isArray(plan.auxiliary)||plan.auxiliary.length!==AUX.length||
+    !AUX.every((address,i)=>plan.auxiliary[i]?.address===address&&
+      /^[0-9a-f]{128}$/i.test(plan.auxiliary[i]?.bytesHex??'')))
+   fail('Invalid original HN5RV01 write plan');
+ const original=fromHex(plan.capturedMainHex);
+ const offset=plan.slot*16;
+ if(!same(original.slice(offset,offset+16),fromHex(plan.beforeHex)))
+   fail('Original captured memory and selected write plan disagree');
+ const proposed=original.slice();
+ const afterRecord=fromHex(plan.afterHex);
+ if(same(afterRecord,fromHex(plan.beforeHex))||!same(afterRecord.slice(4),original.slice(offset+4,offset+16)))
+   fail('Proposed write does not contain a protected RX-only change');
+ proposed.set(afterRecord,offset);
+ const observed=fromHex(capture.main.bytesHex);
+ const auxiliaryMatches=AUX.every((address,i)=>capture.auxiliary[i].address===address&&
+  capture.auxiliary[i].bytesHex.toLowerCase()===plan.auxiliary[i].bytesHex.toLowerCase());
+ const changedMainMatches=same(proposed,observed);
+ const originalMainMatches=same(original,observed);
+ const status=auxiliaryMatches&&changedMainMatches?'CHANGE_VERIFIED':
+  auxiliaryMatches&&originalMainMatches?'UNCHANGED':'MISMATCH';
+ return Object.freeze({
+  status,
+  verified:status==='CHANGE_VERIFIED',
+  unchanged:status==='UNCHANGED',
+  readbackMatches:status!=='MISMATCH',
+  mainMatches:changedMainMatches,
+  originalMainMatches,
+  auxiliaryMatches,
+  changedSlot:plan.slot
+ });
 }
