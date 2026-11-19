@@ -138,16 +138,16 @@ test('mobile order and interactive radio controls survive layout-only change',()
  assert.ok(js.includes('toolbar.append(disconnect,write,verify)'));
 });
 
-test('global header removed; BSG crest navigates home from sidebar',()=>{
+test('global header removed; BSG crest navigates home beside page title',()=>{
  assert.ok(!html.includes('<body><header>'));
  assert.ok(!html.includes('<header>'));
- assert.ok(shell.includes("homeLink.className='bsg-logo-home sidebar-logo-home'"));
+ assert.ok(shell.includes("homeLink.className='bsg-logo-home workspace-home-logo'"));
  assert.ok(shell.includes("homeLink.href='https://blacksurvivalgear.github.io/bsg1/'"));
  assert.ok(shell.includes("homeLogo.src='../BSG%20GOLD%20LOGO.png'"));
  assert.ok(shell.includes("homeLink.setAttribute('aria-label','Return to BSG central homepage')"));
- assert.ok(shell.indexOf('sidebar.append(homeLink)')<shell.indexOf('sidebar.append(brand)'));
+ assert.ok(shell.includes('topbar.append(homeLink,heading)'));
  const styles=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- assert.ok(styles.includes('.app-sidebar .sidebar-logo-home:focus-visible'));
+ assert.ok(styles.includes('.workspace-topbar .workspace-home-logo:focus-visible'));
  assert.ok(styles.includes('.app-shell{min-height:100vh}'));
 });
 test('radio workflow has four steps, Read completes after full channel scan',()=>{
@@ -233,4 +233,35 @@ test('offline write assessment is invalidated after channel edits, imports or mo
  assert.ok(app.includes("channels=updated;render()"));
  assert.ok(app.includes("channels=readChannels();"));
  assert.ok(app.includes("render();"));
+});
+
+test('transparent BSG crest sits in the Radio Manager heading, not the sidebar',()=>{
+ assert.ok(shell.includes("homeLink.className='bsg-logo-home workspace-home-logo'"));
+ assert.ok(shell.includes("homeLink.href='https://blacksurvivalgear.github.io/bsg1/'"));
+ assert.ok(shell.includes("homeLogo.src='../BSG%20GOLD%20LOGO.png'"));
+ assert.ok(shell.includes("topbar.append(homeLink,heading)"));
+ assert.ok(!shell.includes('sidebar.append(homeLink)'));
+ const style=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(style.includes('.workspace-topbar .workspace-home-logo img'));
+ assert.ok(style.includes('.workspace-topbar .workspace-home-logo:focus-visible'));
+});
+test('desktop sidebar defaults to a narrow hover rail, with focus and pin alternatives',()=>{
+ const style=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(style.includes('@media(min-width:761px){\n .app-shell{grid-template-columns:72px minmax(0,1fr)}'));
+ assert.ok(style.includes('.app-sidebar:is(:hover,:focus-within,.is-pinned)'));
+ assert.ok(style.includes('width:238px;box-shadow:10px 5px 24px #0009'));
+ assert.ok(style.includes('visibility:hidden;opacity:0;pointer-events:none'));
+ assert.ok(shell.includes("railToggle.setAttribute('aria-controls','app-sidebar')"));
+ assert.ok(shell.includes("railToggle.setAttribute('aria-expanded','false')"));
+ assert.ok(shell.includes("sidebar.classList.toggle('is-pinned')"));
+ assert.ok(shell.includes("sidebar.classList.remove('is-open','is-pinned')"));
+ assert.ok(shell.includes("const button=document.createElement('button');button.type='button';button.dataset.target=item.id"));
+});
+test('touch/mobile retains existing explicit menu and reduced-motion users avoid hover animations',()=>{
+ const style=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.ok(style.includes('@media(max-width:760px){\n .app-sidebar .sidebar-rail-toggle{display:none}'));
+ assert.ok(style.includes('.app-sidebar.is-open{transform:translateX(0)}'));
+ assert.ok(style.includes('@media(prefers-reduced-motion:reduce)'));
+ assert.ok(shell.includes("menu.onclick=()=>{const opened=sidebar.classList.toggle('is-open')"));
+ assert.ok(shell.includes("backdrop.onclick=closeMenu"));
 });
