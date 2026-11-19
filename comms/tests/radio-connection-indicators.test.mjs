@@ -11,10 +11,14 @@ test('opening USB port never marks radio as identified',()=>{
  assert.deepEqual(usb,{state:'connected',label:'Port connected'});
  assert.deepEqual(radio,{state:'inactive',label:'Not identified'});
 });
-test('simulator is explicitly marked simulated and USB stays disconnected',()=>{
- const {usb,radio}=radioConnectionIndicators({state:'connected',mode:'simulation'});
- assert.deepEqual(usb,{state:'inactive',label:'Disconnected'});
- assert.deepEqual(radio,{state:'simulation',label:'SIMULATED'});
+test('only a confirmed physical read marks radio identified',()=>{
+ const {usb,radio}=radioConnectionIndicators({state:'connected',mode:'usb',identified:true});
+ assert.deepEqual(usb,{state:'connected',label:'Port connected'});
+ assert.deepEqual(radio,{state:'connected',label:'UV-16 Pro V2 identified'});
+});
+test('simulated mode cannot assert a real hardware identity',()=>{
+ const result=radioConnectionIndicators({state:'connected',mode:'simulation',identified:true});
+ assert.equal(result.radio.state,'inactive');
 });
 test('connection transitions are pending and never verified',()=>{
  for(const state of ['connecting','disconnecting']){
