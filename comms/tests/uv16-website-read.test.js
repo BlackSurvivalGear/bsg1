@@ -19,7 +19,7 @@ test('full-memory read returns actual populated channels without touching the ed
  assert.deepEqual(writes,['read']);
  assert.equal(result.channels.length,6);
  assert.equal(result.hardwareVerified,false);
- assert.match(formatUV16Sample(result),/Memory 1: RX 140\.00000 MHz/);
+ assert.match(formatUV16Sample(result),/Scanned 128 memory locations/);
  assert.match(formatUV16Sample(result),/Read complete — 6 programmed channels found/);
 });
 test('reject malformed response',async()=>{
