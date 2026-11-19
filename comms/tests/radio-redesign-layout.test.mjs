@@ -265,3 +265,19 @@ test('touch/mobile retains existing explicit menu and reduced-motion users avoid
  assert.ok(shell.includes("menu.onclick=()=>{const opened=sidebar.classList.toggle('is-open')"));
  assert.ok(shell.includes("backdrop.onclick=closeMenu"));
 });
+
+test('raw read-region snapshot export is disabled until a complete captured read',()=>{
+ assert.ok(html.includes('id="export-uv16-read-regions" type="button" disabled'));
+ assert.ok(app.includes("import {validateUV16ReadRegions} from './uv16-read-regions.js'"));
+ assert.ok(app.includes("const snapshotExport=$('export-uv16-read-regions')"));
+ assert.ok(app.includes("currentReadSnapshot=result.rawSnapshot"));
+ assert.ok(app.includes("snapshotExport.disabled=false"));
+ assert.ok(app.includes("captureRaw:true,"));
+ assert.ok(app.includes("clearReadSnapshot()"));
+ assert.ok(app.includes("if(snapshot.state!=='connected')clearReadSnapshot()"));
+ assert.ok(app.includes("download('bsg-uv16-hn5rv01-read-regions.json'"));
+ assert.ok(app.includes("validateUV16ReadRegions(currentReadSnapshot)"));
+ for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
+  assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
+ }
+});
