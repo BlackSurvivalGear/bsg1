@@ -2,6 +2,7 @@ import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sd
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
+import {validateUV16ReadRegions} from './uv16-read-regions.js';
 import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js';
 import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
@@ -47,6 +48,18 @@ let physicalRadioIdentified=false;
 let lastPhysicalProtocol='No radio operation yet';
 const radioRead=$('radio-read');
 const samplePreview=$('uv16-read-preview');
+const snapshotExport=$('export-uv16-read-regions');
+let currentReadSnapshot=null;
+const clearReadSnapshot=()=>{
+ currentReadSnapshot=null;
+ if(snapshotExport)snapshotExport.disabled=true;
+};
+snapshotExport.onclick=()=>{
+ if(!currentReadSnapshot||!validateUV16ReadRegions(currentReadSnapshot))return;
+ download('bsg-uv16-hn5rv01-read-regions.json',
+  JSON.stringify({...currentReadSnapshot,capturedAt:new Date().toISOString()},null,2),
+  'application/json');
+};
 let sampleReading=false;
 function canReadSelectedRadio(){
   return connectionManager.state==='connected'&&(
@@ -177,12 +190,15 @@ radioRead.onclick=async()=>{
   if(sampleReading||!canReadSelectedRadio())return;
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
   if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
+  clearReadSnapshot();
   sampleReading=true;refreshReadButton();
   $('usb-disconnect').disabled=true;
   samplePreview.textContent='Reading UV-16 Pro V2 — connecting…';
   try{
-    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+    const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,captureRaw:true,
       onProgress:({blocksRead,totalBlocks})=>{samplePreview.textContent='Reading UV-16 Pro V2… '+Math.round(100*blocksRead/totalBlocks)+'%';}});
+    currentReadSnapshot=result.rawSnapshot;
+    snapshotExport.disabled=false;
     physicalRadioIdentified=true;
     updateConnectionIndicators(connectionManager.snapshot());
     $('connection').textContent='UV-16 Pro V2 identified · firmware '+result.firmware+' · read-only connection.';
@@ -209,6 +225,7 @@ radioRead.onclick=async()=>{
     addDiagnostic('Loaded '+missing+' new UV-16 frequency rows; '+(result.channels.length-missing)+' duplicates skipped; previous editor backed up when nonempty');
     logRadioEvent('Added '+missing+' new UV-16 channel rows; no radio changes made');
   }catch(error){
+    clearReadSnapshot();
     physicalRadioIdentified=false;
     updateConnectionIndicators(connectionManager.snapshot());
     lastPhysicalProtocol='Read failed: '+error.message;
