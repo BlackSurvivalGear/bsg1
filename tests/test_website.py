@@ -51,7 +51,7 @@ class WebsiteTests(unittest.TestCase):
         self.assertTrue((ROOT/'BSG GOLD LOGO.png').is_file())
         shell = (ROOT/'comms'/'shell.js').read_text()
         self.assertIn("homeLogo.src='../BSG%20GOLD%20LOGO.png'", shell)
-        self.assertIn('sidebar.append(homeLink)', shell)
+        self.assertIn('topbar.append(homeLink,heading)', shell)
         self.assertNotIn('<header>', html)
         self.assertNotIn('Tactical%20BSG COMMS%20Radio%20Emblem.png', html)
         self.assertIn('.app-sidebar .sidebar-logo-home img', css)
