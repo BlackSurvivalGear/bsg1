@@ -10,6 +10,7 @@ import {runFamilyMockRead} from './uv5r-family-mock.js';
 import {previewRadioIdentity} from './radio-identity-preview.js';
 import {validateVirtualMemory} from './virtual-memory-validation.js';
 import {normaliseChannel,parseCSV,toCSV,parseBackup} from './channels.js';
+import {parseChirpCSV} from './chirp-csv.js';
 import {readProfiles,saveProfile,deleteProfile} from './profiles.js';
 import {MODELS,readModel,channelKey,modelStorage,migrateLegacyChannels} from './models.js';
 const $=id=>document.getElementById(id);migrateLegacyChannels(localStorage);let model=readModel(localStorage),key=channelKey(model),channels=[];
@@ -23,8 +24,8 @@ function download(name,text,type){const url=URL.createObjectURL(new Blob([text],
 $('add').onclick=()=>{if(channels.length>=1000)return alert('Maximum 1000 channels');channels.push(normaliseChannel({name:'NEW',rx:'145.500',tx:'145.500',mode:'FM',notes:''}));render();};
 $('export').onclick=()=>download('bsg-comms-channels.csv',toCSV(channels),'text/csv');
 $('backup').onclick=()=>download('bsg-comms-backup.json',JSON.stringify({format:'squawk-channels-v1',channels},null,2),'application/json');
-let importType='csv';$('import').onclick=()=>{importType='csv';$('file').accept='.csv';$('file').click();};$('restore').onclick=()=>{importType='json';$('file').accept='.json';$('file').click();};
-$('file').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const incoming=importType==='csv'?parseCSV(await file.text()):parseBackup(await file.text());if(incoming.length>1000)throw Error('Maximum 1000 channels');if(confirm('Replace the current channel list with '+incoming.length+' imported channels?')){channels=incoming;render();}}catch(e){alert('Import failed: '+e.message);}event.target.value='';};
+let importType='csv';$('chirp-import').onclick=()=>{importType='chirp';$('file').accept='.csv,text/csv';$('file').click();};$('import').onclick=()=>{importType='csv';$('file').accept='.csv';$('file').click();};$('restore').onclick=()=>{importType='json';$('file').accept='.json';$('file').click();};
+$('file').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const incoming=importType==='csv'?parseCSV(await file.text()):importType==='chirp'?parseChirpCSV(await file.text()):parseBackup(await file.text());if(incoming.length>1000)throw Error('Maximum 1000 channels');if(confirm((importType==='chirp'?'Import '+incoming.length+' CHIRP memories as RECEIVE-ONLY channels? This replaces the current local editor list but does not write to the radio.':'Replace the current channel list with '+incoming.length+' imported channels?'))){channels=incoming;render();}}catch(e){alert('Import failed: '+e.message);}event.target.value='';};
 document.addEventListener('squawk-add-receive-only-channel',event=>{
  if(channels.length>=1000)return alert('Maximum 1000 channels');
  try{const candidate=normaliseChannel({...event.detail,receiveOnly:true});channels.push(candidate);render();alert('Receive-only reference added to Channel Editor.');}
