@@ -49,7 +49,7 @@ if(page&&original&&editor){
  hero.append(photo,centre,status);
  const advanced=document.createElement('details');advanced.className='rm-advanced';
  const summary=document.createElement('summary');summary.textContent='Connection settings and diagnostics';advanced.append(summary,original);
- page.insertBefore(steps,original);page.insertBefore(hero,original);page.insertBefore(toolbar,original);page.insertBefore(advanced,original);
+ page.insertBefore(steps,editor);page.insertBefore(hero,editor);page.insertBefore(toolbar,editor);page.insertBefore(advanced,editor);
  const search=document.createElement('input');search.type='search';search.className='rm-search';search.placeholder='Search channels…';
  search.setAttribute('aria-label','Search channels');
  const editorHeading=editor.querySelector('.toolbar');editorHeading?.append(search);
@@ -85,7 +85,7 @@ if(page&&original&&editor){
   firmware.textContent=identified?'Firmware HN5RV01':'Firmware not yet identified';
   connection.textContent=identified?'Physical radio identified':connected?'USB connected — identification pending':'Radio disconnected';
   connection.classList.toggle('is-identified',identified);
-  for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,identified&&table.children.length>0]]){
+  for(const [n,done] of [[1,connected],[2,identified],[3,identified&&Boolean($('uv16-read-preview')?.textContent.includes('Read complete'))],[4,false]]){
    const node=steps.querySelector('[data-step="'+n+'"]');node?.classList.toggle('is-complete',done);
   }
   steps.querySelector('[data-step="5"]')?.classList.add('is-locked');
