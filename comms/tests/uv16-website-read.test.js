@@ -60,3 +60,22 @@ test('explicit raw snapshot capture must be complete and validated, otherwise fa
  const normal=await readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',Session:fakeSession([])});
  assert.equal(normal.rawSnapshot,null);
 });
+
+test('website adapter accepts complete opt-in CHIRP guard capture',async()=>{
+ const rawSnapshot=captureUV16ReadRegions({firmware:'HN5RV01',channelBytes:new Uint8Array(2048).fill(255),
+  auxiliary:new Map([[0x1e80,new Uint8Array(64)],[0x1ec0,new Uint8Array(64)],[0x1fc0,new Uint8Array(64)]])});
+ const chirpGuardCapture={format:'bsg-uv16-chirp-guard-capture-v1',firmware:'HN5RV01',readOnly:true,restorable:false,
+  regions:[0x1f00,0x1f40,0x1f80].map(address=>({address,bytesHex:'ff'.repeat(64)}))};
+ const result=await readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',captureRaw:true,captureCHIRPGuard:true,
+  Session:class{async readMemory(options){assert.equal(options.captureCHIRPGuard,true);return {...sample,rawSnapshot,chirpGuardCapture};}}});
+ assert.equal(result.chirpGuardCapture,chirpGuardCapture);
+ assert.equal(result.rawSnapshot,rawSnapshot);
+});
+test('website adapter rejects incomplete CHIRP guard capture without accepting evidence',async()=>{
+ const rawSnapshot=captureUV16ReadRegions({firmware:'HN5RV01',channelBytes:new Uint8Array(2048).fill(255),
+  auxiliary:new Map([[0x1e80,new Uint8Array(64)],[0x1ec0,new Uint8Array(64)],[0x1fc0,new Uint8Array(64)]])});
+ await assert.rejects(readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',captureRaw:true,captureCHIRPGuard:true,
+  Session:class{async readMemory(){return {...sample,rawSnapshot,chirpGuardCapture:{regions:[]}};}}}),/Incomplete CHIRP guard/);
+ await assert.rejects(readUV16WebsiteSample({consent:true,connection,model:'uv-16-pro-v2',captureCHIRPGuard:true,
+  Session:class{async readMemory(){throw Error('Must not read');}}}),/requires a raw snapshot/);
+});

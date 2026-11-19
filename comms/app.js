@@ -3,6 +3,7 @@ import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
 import {validateUV16ReadRegions} from './uv16-read-regions.js';
+import {compareBFF8HPCHIRPGuard} from './uv16-chirp-guard-comparison.js';
 import {prepareUV16WritePlan,formatUV16WritePlan} from './uv16-write-preparation.js';
 import {inspectUV16Slot} from './uv16-offline-frequency-codec.js';
 import {previewUV16OfflineWrite,formatUV16OfflineWritePreview} from './uv16-write-preview.js';
@@ -122,6 +123,70 @@ snapshotExport.onclick=()=>{
   JSON.stringify({...currentReadSnapshot,capturedAt:new Date().toISOString()},null,2),
   'application/json');
 };
+let currentGuardCapture=null;
+let guardReading=false;
+const guardRead=$('uv16-guard-read'),guardExport=$('uv16-guard-export');
+const guardImage=$('uv16-guard-image'),guardCompare=$('uv16-guard-compare'),guardStatus=$('uv16-guard-status');
+function clearGuardCapture(){
+ currentGuardCapture=null;
+ guardExport.disabled=true;
+ guardCompare.disabled=true;
+ guardStatus.textContent='No guard capture. Write and Verify remain disabled.';
+}
+function refreshGuardControls(){
+ guardRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+ guardCompare.disabled=guardReading||sampleReading||!currentGuardCapture||!guardImage.files?.length;
+ guardExport.disabled=!currentGuardCapture||guardReading||sampleReading;
+}
+guardImage.onchange=()=>refreshGuardControls();
+guardExport.onclick=()=>{
+ if(!currentGuardCapture)return;
+ download('bsg-uv16-hn5rv01-chirp-guard.json',
+  JSON.stringify({...currentGuardCapture,capturedAt:new Date().toISOString()},null,2),'application/json');
+};
+guardCompare.onclick=async()=>{
+ if(!currentGuardCapture||!guardImage.files?.length||guardReading||sampleReading)return;
+ guardCompare.disabled=true;
+ try{
+  const file=guardImage.files[0];
+  if(file.size>1024*1024||file.size<64)throw Error('Invalid CHIRP image size');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const report=compareBFF8HPCHIRPGuard(bytes,currentGuardCapture);
+  guardStatus.textContent=(report.allGuardAreasMatch?'All three auxiliary guard areas match.':'Auxiliary guard mismatch detected.')+
+   '\\n'+report.comparisons.map(c=>'Radio 0x'+c.radioStart.toString(16).toUpperCase()+
+   ': '+c.matchingBytes+'/'+c.bytes+' bytes match'+(c.exactMatch?'':' (differences: '+c.differingOffsets.length+')')).join('\\n')+
+   '\\nPhysical Write and Verify remain BLOCKED. A match is not a restorable backup.';
+ }catch(error){guardStatus.textContent='CHIRP comparison failed: '+error.message+'\\nPhysical Write remains BLOCKED.';}
+ finally{refreshGuardControls();}
+};
+guardRead.onclick=async()=>{
+ if(guardReading||sampleReading||!canReadSelectedRadio())return;
+ if(!confirm('Perform one extended READ-ONLY UV-16 capture (38 read blocks)? This will not write to the radio or modify Channel Editor.'))return;
+ clearGuardCapture();
+ guardReading=true;refreshReadButton();refreshGuardControls();
+ $('usb-disconnect').disabled=true;
+ guardStatus.textContent='Reading UV-16 guard regions and 128 memory slots…';
+ try{
+  const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true,
+   captureRaw:true,captureCHIRPGuard:true});
+  currentGuardCapture=result.chirpGuardCapture;
+  currentReadSnapshot=result.rawSnapshot;
+  snapshotExport.disabled=false;
+  physicalRadioIdentified=true;
+  updateConnectionIndicators(connectionManager.snapshot());
+  lastPhysicalProtocol='Extended read-only CHIRP guard capture complete';
+  guardStatus.textContent='Read complete: 3 auxiliary guard blocks and 128 channel slots. Select your CHIRP .img and Compare. No channel changes or radio writes.';
+  addDiagnostic('UV-16 extended read-only CHIRP guard capture complete');
+  logRadioEvent('UV-16 CHIRP guard read complete; no radio changes');
+ }catch(error){
+  clearGuardCapture();clearReadSnapshot();
+  guardStatus.textContent='Guard read failed: '+error.message+'. No partial evidence accepted; reconnect before retry.';
+  addDiagnostic('UV-16 CHIRP guard capture failed: '+error.message);
+ }finally{
+  guardReading=false;refreshReadButton();refreshGuardControls();
+  $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+ }
+};
 let sampleReading=false;
 function canReadSelectedRadio(){
   return connectionManager.state==='connected'&&(
@@ -131,7 +196,8 @@ function canReadSelectedRadio(){
 function refreshReadButton(){
   const selected=MODELS.find(item=>item.id===model);
   radioRead.textContent='Read '+(selected?.name||'Radio').replace(/^Baofeng /,'');
-  radioRead.disabled=sampleReading||!canReadSelectedRadio();
+  radioRead.disabled=sampleReading||guardReading||!canReadSelectedRadio();
+  refreshGuardControls();
   radioRead.title=model==='uv-16-pro-v2'
     ?'Read all 128 UV-16 memory slots and load programmed channels into Channel Editor'
     :'USB memory reading is not yet implemented for this model';
@@ -250,7 +316,7 @@ $('usb-test').onclick=async()=>{
   }
 };
 radioRead.onclick=async()=>{
-  if(sampleReading||!canReadSelectedRadio())return;
+  if(sampleReading||guardReading||!canReadSelectedRadio())return;
   if(model!=='uv-16-pro-v2'||connectionManager.mode!=='usb')return;
   if(!confirm('Read the UV-16 Pro V2 memory into Channel Editor? This does not modify the radio. Existing editor channels are preserved, and a backup is downloaded if needed.'))return;
   clearReadSnapshot();
@@ -302,7 +368,7 @@ radioRead.onclick=async()=>{
 };
 $('usb-disconnect').onclick=async()=>{
   if(connectionManager.mode!=='usb'||connectionManager.state!=='connected')return;
-  try{await connectionManager.disconnect();clearReadSnapshot();}
+  try{await connectionManager.disconnect();clearReadSnapshot();clearGuardCapture();}
   catch(e){alert('USB disconnect failed: '+e.message);}
 };
 connectionManager.setState('disconnected');
