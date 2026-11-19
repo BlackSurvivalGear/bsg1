@@ -2,6 +2,7 @@ import {SDR_DIRECTORIES,searchSDR,readSDRFavorites,toggleSDRFavorite} from './sd
 import {parseRepeaterCSV,searchRepeaters,repeaterChannel} from './repeaters.js';
 import {ConnectionManager} from './connection.js';
 import {readUV16WebsiteSample,formatUV16Sample} from './uv16-website-read.js';
+import {sampleToEditorRows,appendSampleRows} from './uv16-sample-import.js';
 import {usbDiagnosticSummary,formatDiagnosticExport} from './usb-diagnostics.js';
 import {radioDiagnosticSummary,formatRadioDiagnosticExport} from './radio-diagnostics.js';
 import {radioConnectionIndicators} from './radio-connection-indicators.js';
@@ -39,7 +40,10 @@ const identityPreview=$('bff8hp-identification-preview');
 const simulatorRead=$('simulator-read');
 const sampleRead=$('uv16-read-sample');
 const samplePreview=$('uv16-read-preview');
+const sampleImport=$('uv16-import-sample');
 let sampleReading=false;
+let lastUV16Sample=null;
+function clearUV16Sample(){lastUV16Sample=null;sampleImport.disabled=true;}
 const usbIndicator=$('usb-indicator');
 const radioIndicator=$('radio-indicator');
 function updateConnectionIndicators(snapshot){
@@ -111,6 +115,7 @@ const connectionManager=new ConnectionManager({
     const busy=state==='connecting'||state==='disconnecting';
     simulatorRead.disabled=busy||state!=='connected'||mode!=='simulation';
     sampleRead.disabled=busy||sampleReading||state!=='connected'||mode!=='usb'||model!=='uv-16-pro-v2';
+    if(state!=='connected'||mode!=='usb')clearUV16Sample();
     identityPreview.disabled=busy||state==='connected';
     $('connect').disabled=busy||state==='connected';
     $('usb-test').disabled=busy||state==='connected';
@@ -198,11 +203,13 @@ sampleRead.onclick=async()=>{
   if(sampleReading||connectionManager.state!=='connected'||connectionManager.mode!=='usb'||model!=='uv-16-pro-v2')return;
   if(!confirm('EXPERIMENTAL UV-16 READ: Send the captured identification and memory READ commands to the selected physical USB radio? No channel programming will be performed. Continue only with a UV-16 Pro V2 and an existing CHIRP backup.'))return;
   sampleReading=true;sampleRead.disabled=true;
+  clearUV16Sample();
   $('usb-disconnect').disabled=true;
   samplePreview.textContent='Reading six sample memories from USB…';
   try{
     const result=await readUV16WebsiteSample({connection:connectionManager,model,consent:true});
     samplePreview.textContent=formatUV16Sample(result);
+    lastUV16Sample=result;sampleImport.disabled=false;
     addDiagnostic('UV-16 experimental sample read returned six frequencies; hardware compatibility not yet independently verified');
     logRadioEvent('Experimental UV-16 USB sample read completed; saved channel editor unchanged');
   }catch(error){
@@ -213,6 +220,27 @@ sampleRead.onclick=async()=>{
     sampleReading=false;
     sampleRead.disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb'||model!=='uv-16-pro-v2';
     $('usb-disconnect').disabled=connectionManager.state!=='connected'||connectionManager.mode!=='usb';
+  }
+};
+sampleImport.onclick=()=>{
+  if(!lastUV16Sample||sampleReading||model!=='uv-16-pro-v2')return;
+  try{
+    const additions=sampleToEditorRows(lastUV16Sample);
+    const updated=appendSampleRows(channels,additions);
+    const accepted=confirm('Add '+additions.length+' READ-ONLY frequency rows to your existing '+channels.length+' Channel Editor entries? Your original rows will be preserved, a JSON backup download will start, and no radio write will occur. Mode, tone and power are not read.');
+    if(!accepted)return;
+    // Snapshot is captured before any in-browser mutation.
+    const backup=JSON.stringify({format:'squawk-channels-v1',channels},null,2);
+    download('bsg-comms-before-uv16-import.json',backup,'application/json');
+    channels=updated;
+    render();
+    addDiagnostic('Appended '+additions.length+' read-only UV-16 sample rows; downloaded pre-import editor backup; no radio write');
+    logRadioEvent('Added '+additions.length+' local frequency-only UV-16 rows; existing rows retained');
+    samplePreview.textContent+='\nSix receive-only sample rows added to Channel Editor. Verify mode and settings separately.';
+    clearUV16Sample();
+  }catch(error){
+    addDiagnostic('UV-16 sample import failed: '+error.message);
+    alert('Unable to add sample rows: '+error.message);
   }
 };
 $('usb-disconnect').onclick=async()=>{
@@ -340,6 +368,7 @@ selector.addEventListener('change',()=>{
     return;
   }
   model=selector.value;
+  clearUV16Sample();
   identityPreview.disabled=false;
   simulatorIdentity.textContent='Virtual radio not connected.';
   localStorage.setItem('squawk-selected-model-v1',model);
