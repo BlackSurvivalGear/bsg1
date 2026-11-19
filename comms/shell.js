@@ -14,7 +14,7 @@ const features=pick('.features');
 const shell=document.createElement('div');shell.className='app-shell';
 const sidebar=document.createElement('aside');sidebar.className='app-sidebar';sidebar.id='app-sidebar';sidebar.setAttribute('aria-label','Main navigation');
 const homeLink=document.createElement('a');
-homeLink.className='bsg-logo-home sidebar-logo-home';
+homeLink.className='bsg-logo-home workspace-home-logo';
 homeLink.href='https://blacksurvivalgear.github.io/bsg1/';
 homeLink.setAttribute('aria-label','Return to BSG central homepage');
 homeLink.title='BSG Central Home';
@@ -23,14 +23,22 @@ homeLogo.src='../BSG%20GOLD%20LOGO.png';
 homeLogo.alt='Black Survival Gear gold emblem';
 homeLogo.width=64;homeLogo.height=64;
 homeLink.append(homeLogo);
-sidebar.append(homeLink);
+// The logo belongs to the workspace header, not the collapsible navigation.
+const railToggle=document.createElement('button');
+railToggle.type='button';
+railToggle.className='sidebar-rail-toggle';
+railToggle.textContent='☰';
+railToggle.setAttribute('aria-label','Expand navigation');
+railToggle.setAttribute('aria-controls','app-sidebar');
+railToggle.setAttribute('aria-expanded','false');
+sidebar.append(railToggle);
 const brand=document.createElement('div');brand.className='sidebar-brand';brand.textContent='BSG COMMS';sidebar.append(brand);
 const nav=document.createElement('nav');nav.className='workspace-nav';nav.setAttribute('aria-label','Workspaces');sidebar.append(nav);
 const content=document.createElement('div');content.className='workspace-content';
 const topbar=document.createElement('div');topbar.className='workspace-topbar';
 const menu=document.createElement('button');menu.type='button';menu.className='mobile-menu';menu.textContent='☰ Menu';menu.setAttribute('aria-controls','app-sidebar');menu.setAttribute('aria-expanded','false');topbar.append(menu);
 const heading=document.createElement('div');heading.className='workspace-heading';
-const title=document.createElement('h2');title.id='workspace-title';const subtitle=document.createElement('p');subtitle.id='workspace-description';heading.append(title,subtitle);topbar.append(heading);
+const title=document.createElement('h2');title.id='workspace-title';const subtitle=document.createElement('p');subtitle.id='workspace-description';heading.append(title,subtitle);topbar.append(homeLink,heading);
 const chip=document.createElement('span');chip.className='workspace-chip';chip.textContent='READ AVAILABLE · WRITE LOCKED';topbar.append(chip);
 content.append(topbar);
 const pages=document.createElement('div');pages.className='workspace-pages';content.append(pages);
@@ -57,7 +65,13 @@ for(const id of ['frequencies','africandxnet','rsn','operations','tools','academ
 const settings=view('settings');settings.append(notice,diagnostics,features);
 main.replaceChildren(shell);shell.append(sidebar,content);
 const backdrop=document.createElement('button');backdrop.className='nav-backdrop';backdrop.type='button';backdrop.hidden=true;backdrop.setAttribute('aria-label','Close navigation');shell.append(backdrop);
-function closeMenu(){sidebar.classList.remove('is-open');backdrop.hidden=true;menu.setAttribute('aria-expanded','false');}
+function closeMenu(){
+ sidebar.classList.remove('is-open','is-pinned');
+ backdrop.hidden=true;
+ menu.setAttribute('aria-expanded','false');
+ railToggle.setAttribute('aria-expanded','false');
+ railToggle.setAttribute('aria-label','Expand navigation');
+}
 function refreshDashboard(){
  stats.replaceChildren();
  const values=[['Selected radio',$('model-name')?.textContent||'Not selected'],['Channels',$('count')?.textContent.replace(/[()]/g,'')||'0'],['Connection Status',null],['Saved profiles',String(Math.max(0,($('profiles')?.options.length||1)-1))]];
@@ -107,6 +121,11 @@ for(const item of WORKSPACES){
   card.append(name,description);card.onclick=()=>{if(item.id==='rsn'){window.open('https://www.rsn.ng/','_blank','noopener,noreferrer');return;}navigate(item.id);};shortcuts.append(card);
  }
 }
+railToggle.onclick=()=>{
+ const pinned=sidebar.classList.toggle('is-pinned');
+ railToggle.setAttribute('aria-expanded',String(pinned));
+ railToggle.setAttribute('aria-label',pinned?'Collapse navigation':'Expand navigation');
+};
 menu.onclick=()=>{const opened=sidebar.classList.toggle('is-open');backdrop.hidden=!opened;menu.setAttribute('aria-expanded',String(opened));};
 backdrop.onclick=closeMenu;
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMenu();});
