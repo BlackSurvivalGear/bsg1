@@ -14,8 +14,11 @@ test('approved redesign loads after existing radio and sidebar modules',()=>{
  assert.ok(!js.includes("sidebar.replaceChildren"));
 });
 test('approved image is resolved relative to comms folder',()=>{
- assert.ok(js.includes("../UV%2016%20PRO.png"));
- assert.ok(js.includes("img.alt='Baofeng UV-16 Pro V2 radio'"));
+ const models=readFileSync(new URL('../models.js',import.meta.url),'utf8');
+ assert.ok(js.includes("import {MODELS} from './models.js';"));
+ for(const image of ["../UV32.png","../UV%2016%20PRO.png","../UV%205R.png"])assert.ok(models.includes(image),image);
+ assert.ok(js.includes("img.alt=current.name+' radio'"));
+ assert.ok(js.includes('img.src=current.image'));
 });
 test('existing physical radio handlers and model-aware reader remain untouched',()=>{
  for(const id of ['connect','usb-disconnect','radio-read','radio-write-placeholder','radio-verify-write-placeholder','channels','radio-model']){
@@ -96,4 +99,16 @@ test('read errors remain visible with failed address and the status no longer cl
  assert.ok(app.includes("samplePreview.textContent='Read failed — '+error.message"));
  assert.ok(app.includes('radioIdentified:physicalRadioIdentified'));
  assert.ok(!workspace.includes('Connect, simulate, manage profiles and edit channels'));
+});
+
+test('selecting radios refreshes their own image and only UV-16 receives read workflow',()=>{
+ assert.ok(js.includes("modelSelector?.addEventListener('change',refreshRadioImage)"));
+ assert.ok(js.includes("current.id==='uv-16-pro-v2')prepareUV16Cutout(img)"));
+ assert.ok(js.includes("const supportsPhysicalRead=selectedModel?.physicalRead===true"));
+ assert.ok(js.includes("identifyButton.hidden=!connected||identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("read.hidden=!identified||!supportsPhysicalRead"));
+ assert.ok(js.includes("primaryConnect.disabled=connect.disabled||!supportsPhysicalRead"));
+ assert.ok(js.includes("fwValue.textContent=!supportsPhysicalRead?'Unsupported'"));
+ const cutout=readFileSync(new URL('../radio-photo-cutout.js',import.meta.url),'utf8');
+ assert.ok(cutout.includes("img.dataset.model!=='uv-16-pro-v2'"));
 });
