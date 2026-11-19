@@ -1,5 +1,4 @@
 export const WORKSPACES=Object.freeze([
- {id:'dashboard',title:'Dashboard',group:'Workspace',description:'Overview and quick access',ready:true},
  {id:'radios',title:'Radio Manager',group:'Workspace',description:'Connect, identify, read and edit physical radio channels',ready:true},
  {id:'repeaters',title:'Repeaters',group:'Discover',description:'UK CSV repeater search',ready:true},
  {id:'sdr',title:'Global SDR',group:'Discover',description:'Public online receiver directories',ready:true},
@@ -11,6 +10,6 @@ export const WORKSPACES=Object.freeze([
  {id:'academy',title:'Radio Academy',group:'Plan',description:'Offline radio lessons and knowledge checks',ready:true},
  {id:'settings',title:'Settings',group:'System',description:'USB diagnostics and hardware status',ready:true}
 ]);
-export const DEFAULT_WORKSPACE='dashboard';
-export function validWorkspace(value){if(value==='channels')return 'radios';return WORKSPACES.some(item=>item.id===value)?value:DEFAULT_WORKSPACE;}
+export const DEFAULT_WORKSPACE='radios';
+export function validWorkspace(value){if(value==='channels'||value==='dashboard')return 'radios';return WORKSPACES.some(item=>item.id===value)?value:DEFAULT_WORKSPACE;}
 export function workspaceFromHash(hash){return validWorkspace(String(hash||'').replace(/^#\/?/,'').split('/')[0]);}
