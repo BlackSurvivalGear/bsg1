@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('radio controls are statically defined exactly once',()=>{
- for(const id of ['radio-model','bff8hp-identification-preview','usb-indicator','usb-indicator-status','radio-indicator','radio-indicator-status','connect','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','usb-refresh','usb-clear','usb-copy','simulator-identity']){
+ for(const id of ['radio-model','bff8hp-identification-preview','usb-indicator','usb-indicator-status','radio-indicator','radio-indicator-status','connect','simulate','radio-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','usb-refresh','usb-clear','usb-copy','simulator-identity']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
 });
@@ -19,7 +19,7 @@ test('connection workflow uses original event handlers and diagnostic actions',(
 test('radio connection and channel editing remain separate',()=>{
  assert.ok(html.includes('id="channels"'));
  assert.ok(html.includes('id="profiles"'));
- assert.ok(app.includes("const simulatorRead=$('simulator-read')"));
+ assert.ok(app.includes("const radioRead=$('radio-read')"));
 });
 
 
@@ -57,7 +57,7 @@ test('V3 future hardware actions are unique disabled static placeholders',()=>{
  }
 });
 test('V3 keeps existing working controls and avoids duplicate physical actions',()=>{
- for(const id of ['connect','usb-test','simulate','simulator-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
+ for(const id of ['connect','usb-test','simulate','radio-read','radio-settings-open','usb-disconnect','radio-disconnect','usb-diagnostics-panel','radio-diagnostics-panel','channels','profiles']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
  assert.ok(html.includes('class="radio-editor-program-actions actions"'));
@@ -65,7 +65,7 @@ test('V3 keeps existing working controls and avoids duplicate physical actions',
  assert.ok(!html.includes('Write radio (unavailable)'));
  assert.ok(app.includes("$('usb-disconnect').onclick"));
  assert.ok(app.includes("$('radio-disconnect').onclick"));
- assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+ assert.ok(app.includes('radioRead.onclick=async()=>'));
  assert.ok(!html.includes('id="disconnect"'));
  assert.ok(!html.includes('id="radio-read-identity-placeholder"'));
 });
@@ -102,29 +102,29 @@ test('compact Channel Editor keeps radio actions centered and file actions after
  assert.ok(!html.includes('id="radio-read-placeholder"'));
  assert.ok(!html.includes('id="radio-backup-placeholder"'));
  assert.ok(!html.includes('id="radio-restore-placeholder"'));
- for(const id of ['simulator-read','radio-write-placeholder','radio-verify-write-placeholder','add','import','export','backup','restore']){
+ for(const id of ['radio-read','radio-write-placeholder','radio-verify-write-placeholder','add','import','export','backup','restore']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
  assert.ok(editor.includes('class="radio-editor-program-actions actions"'));
- assert.ok(editor.indexOf('id="simulator-read"')<editor.indexOf('id="radio-write-placeholder"'));
+ assert.ok(editor.indexOf('id="radio-read"')<editor.indexOf('id="radio-write-placeholder"'));
  assert.ok(editor.indexOf('id="radio-write-placeholder"')<editor.indexOf('id="radio-verify-write-placeholder"'));
  assert.ok(editor.indexOf('id="channels"')<editor.indexOf('id="add"'));
  assert.ok(editor.indexOf('id="add"')<editor.indexOf('id="import"'));
  assert.ok(editor.indexOf('id="import"')<editor.indexOf('id="export"'));
  assert.ok(editor.indexOf('id="export"')<editor.indexOf('id="backup"'));
  assert.ok(editor.indexOf('id="backup"')<editor.indexOf('id="restore"'));
- assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+ assert.ok(app.includes('radioRead.onclick=async()=>'));
 });
 
 test('programming actions use prominent distinct colours while preserving disabled hardware controls',()=>{
  const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
- for(const fragment of ['#simulator-read{background:#17633f','#simulator-read:disabled{background:#17402c','#radio-write-placeholder:disabled{background:#483d19','#radio-verify-write-placeholder:disabled{background:#263547','font-weight:800','min-height:52px']){
+ for(const fragment of ['#radio-read{background:#17633f','#radio-read:disabled{background:#17402c','#radio-write-placeholder:disabled{background:#483d19','#radio-verify-write-placeholder:disabled{background:#263547','font-weight:800','min-height:52px']){
   assert.ok(css.includes(fragment),fragment);
  }
  for(const id of ['radio-write-placeholder','radio-verify-write-placeholder']){
   assert.match(html,new RegExp('<button id="'+id+'" type="button" disabled'));
  }
- assert.ok(app.includes('simulatorRead.onclick=async()=>'));
+ assert.ok(app.includes('radioRead.onclick=async()=>'));
 });
 test('USB and Radio diagnostics retain collapsible controls and brighter gold summaries',()=>{
  const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
@@ -157,4 +157,16 @@ test('expanding one diagnostics disclosure does not stretch its sibling connecti
  for(const id of ['usb-diagnostics-panel','radio-diagnostics-panel']){
   assert.match(html,new RegExp('<details[^>]*id="'+id+'"'));
  }
+});
+
+test('single model-aware read control replaces all legacy editor read actions',()=>{
+ assert.equal((html.match(/id="radio-read"/g)||[]).length,1);
+ for(const id of ['simulator-read','uv16-read-sample','uv16-import-sample'])
+   assert.ok(!html.includes('id="'+id+'"'),id+' must not remain');
+ assert.ok(app.includes('function refreshReadButton()'));
+ assert.ok(app.includes("radioRead.textContent='Read '"));
+ assert.ok(app.includes("radioRead.onclick=async()=>"));
+ assert.ok(app.includes('readUV16WebsiteSample({connection:connectionManager,model,consent:true})'));
+ assert.ok(app.includes('appendSampleRows(channels,additions)'));
+ assert.ok(html.includes('id="radio-write-placeholder" type="button" disabled'));
 });

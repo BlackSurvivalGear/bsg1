@@ -403,8 +403,8 @@ main{max-width:none;padding:0;margin:0}
 /* Prominent programming controls and diagnostics, without changing enabled states. */
 .workspace-view[data-workspace="radios"] .radio-editor-program-actions{gap:10px}
 .workspace-view[data-workspace="radios"] .radio-editor-program-actions button{font-size:.94rem;font-weight:800;letter-spacing:.025em;min-height:52px;padding:11px 18px;border-width:2px;border-style:solid;border-radius:9px;text-shadow:0 1px 1px #0005}
-.workspace-view[data-workspace="radios"] #simulator-read{background:#17633f;border-color:#49c88a;color:#fff}
-.workspace-view[data-workspace="radios"] #simulator-read:disabled{background:#17402c;border-color:#3a805b;color:#c5e3d0;opacity:.7;cursor:not-allowed}
+.workspace-view[data-workspace="radios"] #radio-read{background:#17633f;border-color:#49c88a;color:#fff}
+.workspace-view[data-workspace="radios"] #radio-read:disabled{background:#17402c;border-color:#3a805b;color:#c5e3d0;opacity:.7;cursor:not-allowed}
 .workspace-view[data-workspace="radios"] #radio-write-placeholder:disabled{background:#483d19;border-color:#d9b85c;color:#e8ca78;opacity:.78;cursor:not-allowed}
 .workspace-view[data-workspace="radios"] #radio-verify-write-placeholder:disabled{background:#263547;border-color:#6787a6;color:#a9c8ea;opacity:.78;cursor:not-allowed}
 .workspace-view[data-workspace="radios"] .radio-connection-stack>.usb-diagnostics-panel{border:1.5px solid #d8af52;background:#1c2b1d;border-radius:10px}

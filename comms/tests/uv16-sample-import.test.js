@@ -30,3 +30,20 @@ test('refuse missing or corrupt reads, oversized editor, or non-receive-only row
  const rows=sampleToEditorRows(sample);rows[0].receiveOnly=false;
  assert.throws(()=>appendSampleRows([],rows));
 });
+
+test('second identical sample import is a no-op and never duplicates rows',()=>{
+ const rows=sampleToEditorRows(sample);
+ const first=appendSampleRows([],rows);
+ const second=appendSampleRows(first,rows);
+ assert.equal(first.length,6);
+ assert.equal(second.length,6);
+ assert.deepEqual(second,first);
+});
+test('partial previous import appends only missing samples and preserves modified rows',()=>{
+ const rows=sampleToEditorRows(sample);
+ const edited={...rows[0],notes:'User-edited note'};
+ const result=appendSampleRows([edited,rows[1],rows[2]],rows);
+ assert.equal(result.length,6);
+ assert.equal(result[0].notes,'User-edited note');
+ assert.deepEqual(result.slice(3).map(r=>r.name),rows.slice(3).map(r=>r.name));
+});

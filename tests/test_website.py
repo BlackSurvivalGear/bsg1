@@ -35,7 +35,10 @@ class WebsiteTests(unittest.TestCase):
         self.assertNotIn('href="https://imotechai.github.io/squawk/"', html)
         self.assertIn('BSG COMMS', comms)
         self.assertIn('href="../dashboard/"', comms)
-        self.assertIn('id="simulator-read" type="button" disabled', comms)
+        self.assertIn('id="radio-read" type="button" disabled', comms)
+        self.assertNotIn('id="simulator-read"', comms)
+        self.assertNotIn('id="uv16-read-sample"', comms)
+        self.assertNotIn('id="uv16-import-sample"', comms)
         self.assertIn('id="radio-write-placeholder" type="button" disabled', comms)
         self.assertIn('id="restore">Restore JSON', comms)
 
