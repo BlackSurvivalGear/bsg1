@@ -95,15 +95,16 @@ test('identify checks firmware with one allowlisted read and no channel scan',as
  assert.equal(identity.readOnly,true);
  assert.equal(identity.hardwareVerified,false);
  const reads=d.writes.filter(cmd=>cmd[0]===0x53);
- assert.equal(reads.length,1);
- assert.deepEqual(reads[0],[0x53,0x1e,0xc0,64]);
+ assert.equal(reads.length,2);
+ assert.deepEqual(reads[0],[0x53,0x1e,0x80,64]);
+ assert.deepEqual(reads[1],[0x53,0x1e,0xc0,64]);
  assert.equal(d.writes.some(cmd=>cmd[0]===0x57),false);
  await assert.rejects(session.identify(),{code:'SESSION_USED'});
 });
 test('identity rejects wrong firmware without scanning memories',async()=>{
  const d=device({badFirmware:true});
  await assert.rejects(new UV16ReadOnlySession({port:d.port}).identify(),{code:'WRONG_FIRMWARE'});
- assert.equal(d.writes.filter(cmd=>cmd[0]===0x53).length,1);
+ assert.equal(d.writes.filter(cmd=>cmd[0]===0x53).length,2);
 });
 test('identity rejects unexpected handshake and sends no memory commands',async()=>{
  const d=device({badIdentity:true});
@@ -119,7 +120,7 @@ test('read reuses identified session and does not issue another magic handshake'
  assert.equal(result.capacity,128);
  assert.equal(result.channels.length,6);
  assert.equal(d.writes.filter(x=>x.length===1&&x[0]===0x50).length,1);
- assert.equal(d.writes.filter(x=>x[0]===0x53).length,36); // one identify firmware + 3 aux + 32 memories
+ assert.equal(d.writes.filter(x=>x[0]===0x53).length,35); // 2 identify aux + 1 remaining aux + 32 memories
  assert.equal(d.writes.some(x=>x[0]===0x57),false);
  await assert.rejects(session.readMemory(),{code:'SESSION_USED'});
 });
