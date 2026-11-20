@@ -51,6 +51,19 @@ const radios=view('radios');
 radios.append(radio,editorCard,profiles);
 view('repeaters').append(repeater);
 view('sdr').append(sdr);
+const mesh=view('mesh');
+const meshCard=document.createElement('section');meshCard.className='status';meshCard.style.cssText='display:block;padding:22px;max-width:100%';
+const meshTitle=document.createElement('h2');meshTitle.textContent='Meshtastic Network Map';
+const meshInfo=document.createElement('p');meshInfo.textContent='Explore publicly reported Meshtastic nodes using Liam Cottle’s community MQTT map. The map is independently operated and embedding may be restricted by its security policy.';
+const meshActions=document.createElement('div');meshActions.className='actions';meshActions.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin:18px 0';
+const meshURL='https://meshtastic.liamcottle.net/?lat=28.84608199658288&lng=377.2265625&zoom=3';
+const meshLoad=document.createElement('button');meshLoad.type='button';meshLoad.textContent='Load Meshtastic Map';meshLoad.setAttribute('aria-controls','mesh-frame');meshLoad.setAttribute('aria-expanded','false');
+const meshOpen=document.createElement('a');meshOpen.href=meshURL;meshOpen.target='_blank';meshOpen.rel='noopener noreferrer';meshOpen.textContent='Open Full Map ↗';meshOpen.className='academy-community-external';meshOpen.style.cssText='display:inline-flex;align-items:center;padding:10px 16px;min-height:40px;border:1px solid #857348;border-radius:8px;background:#243a28;color:#f1d17a;font-weight:700;text-decoration:none;box-sizing:border-box';
+const meshFrame=document.createElement('iframe');meshFrame.id='mesh-frame';meshFrame.title='Liam Cottle Meshtastic network map';meshFrame.loading='lazy';meshFrame.referrerPolicy='no-referrer';meshFrame.hidden=true;meshFrame.style.cssText='width:100%;height:min(72vh,760px);min-height:480px;border:1px solid #857348;border-radius:8px;background:#101a13';
+const meshNote=document.createElement('p');meshNote.textContent='If the embedded map stays blank or shows “refused to connect”, select Open Full Map. BSG COMMS does not control third-party framing permissions.';
+meshLoad.addEventListener('click',()=>{const show=meshFrame.hidden;if(show&&!meshFrame.src)meshFrame.src=meshURL;meshFrame.hidden=!show;meshLoad.textContent=show?'Hide Meshtastic Map':'Load Meshtastic Map';meshLoad.setAttribute('aria-expanded',String(show));});
+meshActions.append(meshLoad,meshOpen);meshCard.append(meshTitle,meshInfo,meshActions,meshFrame,meshNote);mesh.append(meshCard);
+
 for(const id of ['frequencies','africandxnet','rsn','operations','tools','academy']){
  const item=WORKSPACES.find(entry=>entry.id===id),panel=view(id);
  if(id==='operations'||id==='tools'||id==='frequencies'||id==='academy'||id==='africandxnet'||id==='rsn'){const mount=document.createElement('div');mount.id=id==='operations'?'range-planner':id==='tools'?'antenna-tools':id==='academy'?'radio-academy':id==='africandxnet'?'africandxnet':id==='rsn'?'rsn':'frequency-explorer';panel.append(mount);continue;}
@@ -114,7 +127,7 @@ for(const item of WORKSPACES){
  const text=document.createElement('span');text.textContent=item.title;button.append(text);
  if(!item.ready){const tag=document.createElement('small');tag.textContent='SOON';button.append(tag);}
  button.addEventListener('click',()=>{if(item.id==='rsn'){window.open('https://www.rsn.ng/','_blank','noopener,noreferrer');closeMenu();return;}navigate(item.id);});nav.append(button);
- if(['repeaters','sdr','frequencies','radios','operations','tools','africandxnet','rsn','academy'].includes(item.id)){
+ if(['repeaters','sdr','frequencies','radios','operations','tools','africandxnet','rsn','academy','mesh'].includes(item.id)){
   const card=document.createElement('button');card.type='button';card.className='shortcut-card';
   const name=document.createElement('strong');name.textContent=item.title;
   const description=document.createElement('span');description.textContent=item.description;
