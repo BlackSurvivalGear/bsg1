@@ -3,6 +3,7 @@ export const WORKSPACES=Object.freeze([
  {id:'repeaters',title:'Repeaters',group:'Discover',description:'UK CSV repeater search',ready:true},
  {id:'sdr',title:'Global SDR',group:'Discover',description:'Public online receiver directories',ready:true},
  {id:'frequencies',title:'Frequencies',group:'Discover',description:'UK band and service frequency reference',ready:true},
+ {id:'mesh',title:'Mesh Networking',group:'Discover',description:'Explore public Meshtastic mesh nodes and networks',ready:true},
  {id:'africandxnet',title:'AfricanDXNet',group:'Discover',description:'AfricanDXNet amateur radio community',ready:true},
  {id:'rsn',title:'RSN',group:'Discover',description:'Radio Society of Nigeria',ready:true},
  {id:'operations',title:'Operations',group:'Plan',description:'Map and terrain radio range planner',ready:true},
